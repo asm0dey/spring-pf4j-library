@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: opdsko-spring
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: password
+
+logging:
+  level:
+    root: info
+    org.jooq: debug
+
+scanner:
+  sources:
+    - /home/finkel/Books/
+
+meilisearch:
+  host: 127.0.0.1:7700
+  api-key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1
+
+plugin-dir: plugins
