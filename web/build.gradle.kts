@@ -1,3 +1,4 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
@@ -54,7 +55,15 @@ dependencies {
 //    implementation(libs.tinylog.slf4j)
     implementation(libs.zip4j)
     jooqCodegen(libs.postgresql)
+    implementation(platform(BOM_COORDINATES))
     kapt(libs.pf4j)
+    implementation(libs.pf4j)
+/*
+    implementation(libs.pf4j.spring) {
+        exclude("org.slf4j")
+        exclude("org.springframework")
+    }
+*/
     runtimeOnly(libs.bulma)
     runtimeOnly(libs.font.awesome)
     runtimeOnly(libs.htmx.org)

@@ -20,9 +20,6 @@ allprojects {
             }
         }
     */
-    dependencies {
-        implementation(platform(BOM_COORDINATES))
-    }
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(21)

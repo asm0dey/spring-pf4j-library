@@ -8,15 +8,29 @@ spring:
 
 logging:
   level:
-    root: info
+    root: debug
+    com.zaxxer: info
+    io.netty: info
+    javax: info
+    jdk: info
+    okhttp3: info
+    okio: info
+    org.flywaydb: info
+    org.hibernate: info
     org.jooq: debug
+    org.pf4j: debug
+    org.postgresql: info
+    org.springframework: info
+    reactor: info
+    sun: info
 
 scanner:
   sources:
     - /home/finkel/Books/
 
 meilisearch:
-  host: 127.0.0.1:7700
+  host: http://127.0.0.1:7700
   api-key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1
 
-plugin-dir: plugins
+pf4j:
+  plugin-dir: plugins

@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.epub4j)
     compileOnly(project(":common"))
     kapt(libs.pf4j)
+    compileOnly(libs.pf4j)
 }
 
 tasks.test {

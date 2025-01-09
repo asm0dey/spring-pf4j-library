@@ -5,16 +5,17 @@ import com.github.asm0dey.opdsko.common.Book
 import com.github.asm0dey.opdsko.common.BookHandler
 import fb2.FictionBook
 import org.pf4j.Extension
-import org.springframework.stereotype.Component
 import java.io.InputStream
 
 @Extension(points = [BookHandler::class])
-@Component
-data object Fb2BookHandler : BookHandler {
+class Fb2BookHandler : BookHandler {
     override fun supportsFile(fileName: String, data: () -> InputStream) = fileName.lowercase().endsWith(".fb2")
 
     override fun bookInfo(fileName: String, dataProvider: () -> InputStream): Book =
-        Fb2Book(FictionBook(fileName, dataProvider))
+        Fb2Book(FictionBook(fileName, dataProvider), fileName)
+
+    override val readFormats: List<String>
+        get() = listOf("fb2") + if (Fb2Plugin.epubConverterAccessible) listOf("epub") else listOf()
 }
 
 private data class Fb2Book(
@@ -26,9 +27,10 @@ private data class Fb2Book(
     override val genres: List<String>,
     override val sequenceName: String?,
     override val sequenceNumber: Int?,
+    override val path: String,
 ) : Book {
 
-    constructor(fb: FictionBook) : this(
+    constructor(fb: FictionBook, path: String) : this(
         title = fb.title,
         cover = fb.binaries[fb.description?.titleInfo?.coverPage?.first()?.value?.replace("#", "")]?.binary,
         coverContentType = fb.description?.titleInfo?.coverPage?.firstOrNull()?.value?.replace("#", "")?.let {
@@ -46,6 +48,7 @@ private data class Fb2Book(
         genres = fb.description?.titleInfo?.genres ?: listOf(),
         sequenceName = fb.description?.titleInfo?.sequence?.name,
         sequenceNumber = fb.description?.titleInfo?.sequence?.number?.toIntOrNull(),
+        path = path,
     )
 
     override fun equals(other: Any?): Boolean {

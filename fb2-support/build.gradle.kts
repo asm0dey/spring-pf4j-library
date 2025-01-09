@@ -17,6 +17,7 @@ repositories {
 dependencies {
     compileOnly(project(":common"))
     kapt(libs.pf4j)
+    compileOnly(libs.pf4j)
     implementation(libs.kotlinx.serialization.protobuf)
     implementation(libs.zip4j)
     implementation(libs.jsoup)
@@ -49,7 +50,7 @@ tasks.named<ShadowJar>("shadowJar") {
             "Plugin-Id" to "fb2-support",
             "Plugin-Version" to version,
             "Plugin-Provider" to "asm0dey",
+            "Plugin-Class" to "com.github.asm0dey.opdsko.fb2.Fb2Plugin",
         )
     }
 }
-

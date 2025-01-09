@@ -9,18 +9,15 @@ import generated.jooq.tables.pojos.Book
 import generated.jooq.tables.references.BOOK
 import org.jooq.Record2
 import org.jooq.Record5
-import org.pf4j.spring.SpringPluginManager
 import org.reflections.Reflections
 import org.reflections.scanners.Scanners
 import org.slf4j.LoggerFactory
 import org.springframework.aot.hint.BindingReflectionHintsRegistrar
 import org.springframework.aot.hint.RuntimeHints
 import org.springframework.aot.hint.RuntimeHintsRegistrar
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.runApplication
-import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.ImportRuntimeHints
@@ -33,7 +30,6 @@ import org.springframework.web.reactive.function.server.coRouter
 import java.io.File
 import java.io.Serializable
 import java.net.URI
-import java.nio.file.Paths
 import java.util.function.Consumer
 import javax.xml.namespace.QName
 import javax.xml.stream.XMLInputFactory
@@ -71,36 +67,38 @@ class MyRuntimeHintsRegistrar : RuntimeHintsRegistrar {
         val allTypes = reflections.getSubTypesOf(Any::class.java)
         log.info("Found " + allTypes.size + " classes for package " + packageName)
         allTypes.stream().map { it: Class<*> -> it.name }.sorted().forEach { it: String ->
-            log.info(
-                "Registering $it"
-            )
+            log.info("Registering $it")
         }
         allTypes.forEach(Consumer { type: Class<*>? ->
             // Reusing behavior of @RRegisterReflectionForBinding annotation
             bindingReflectionHintsRegistrar.registerReflectionHints(hint.reflection(), type)
         })
         reflections.getSubTypesOf(Serializable::class.java).forEach(Consumer { type: Class<out Serializable?>? ->
-            hint.serialization().registerType(
-                type!!
-            )
+            hint.serialization().registerType(type!!)
         })
     }
 }
 
 @Configuration
 class SpringConfiguration {
+/*
     @Bean
     fun pluginManager(
         ctx: ApplicationContext,
-        @Value("\${plugin-dir}") pluginDir: String,
-    ): SpringPluginManager = SpringPluginManager(Paths.get(pluginDir).toAbsolutePath().also(::println))
+        @Value("\${pf4j.plugin-dir}") pluginDir: String,
+    ): PluginManager = SpringPluginManager(Paths.get(pluginDir).toAbsolutePath().also(::println))
         .apply {
             applicationContext = ctx
             init()
         }
+*/
 
     @Bean
-    fun meiliSearch(props: MeilisearchProperties): Client = Client(Config(props.host, props.apiKey ?: ""))
+    fun meiliSearch(props: MeilisearchProperties): Client {
+        val client = Client(Config(props.host, props.apiKey ?: ""))
+        client.index("books").addDocuments("""[{"id": 1, "name": "x"}]""")
+        return client
+    }
 
 }
 
@@ -134,12 +132,10 @@ class Scanner(
     suspend fun scan(request: ServerRequest): ServerResponse {
         for (file in settings.sources) {
             if (file.isDirectory) {
-                file.walkTopDown().filter { it.isFile }
+                val books = file.walkTopDown().filter { it.isFile }
                     .flatMap { bookService.obtainBooks(it.absolutePath) }
                     .filterNotNull()
-                    .forEach {
-                        println(it)
-                    }
+                    .toList()
 //                bookRepo.save(toList)
             }
         }

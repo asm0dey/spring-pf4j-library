@@ -13,7 +13,7 @@ import kotlin.math.abs
 import kotlin.math.sign
 
 @Service
-@DependsOn("pluginManager")
+@DependsOn("springPluginManager")
 class BookService(val bookHandlers: List<BookHandler>, val delegates: List<DelegatingBookHandler>) {
     fun imageTypes(books: List<BookWithInfo>) = books
         .map { Triple(it.id, it.book.path!!, it.book.zipFile) }
@@ -41,12 +41,7 @@ class BookService(val bookHandlers: List<BookHandler>, val delegates: List<Deleg
         val file = File(absolutePath)
         return delegates
             .firstOrNull { it.supportFile(file) }
-            ?.bookProvider(file)
-            ?.mapNotNull { (name, dataProvider) ->
-                bookHandlers
-                    .firstOrNull { it.supportsFile(name, dataProvider) }
-                    ?.bookInfo(name, dataProvider)
-            }
+            ?.obtainBooks(file, bookHandlers)
             ?: sequenceOf(
                 bookHandlers
                     .firstOrNull { it.supportsFile(absolutePath) { file.inputStream() } }

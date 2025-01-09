@@ -9,6 +9,7 @@ interface Book {
     val genres: List<String>
     val sequenceName: String?
     val sequenceNumber: Int?
+    val path: String
 }
 
 interface Author {
@@ -42,7 +43,7 @@ class AuthorAdapter(
     override val firstName: String? = null,
     override val lastName: String? = null,
     override val middleName: String? = null,
-    override val nickname: String? = null
+    override val nickname: String? = null,
 ) : Author
 
 fun main() {

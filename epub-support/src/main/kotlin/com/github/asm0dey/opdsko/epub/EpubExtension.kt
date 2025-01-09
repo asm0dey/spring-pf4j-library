@@ -6,28 +6,20 @@ import com.github.asm0dey.opdsko.common.Book
 import com.github.asm0dey.opdsko.common.BookHandler
 import io.documentnode.epub4j.epub.EpubReader
 import org.pf4j.Extension
-import org.pf4j.Plugin
-import org.springframework.stereotype.Component
 import java.io.InputStream
+import io.documentnode.epub4j.domain.Book as Epub4JBook
 
 
-/*
-class EpubPlugin : Plugin() {
-    override fun start() {
-        super.start()
-        println("EpubPlugin started!")
-    }
-
-
-}
-*/
 @Extension(points = [BookHandler::class])
-data object EpubBookHandler : BookHandler {
+class EpubBookHandler : BookHandler {
     override fun supportsFile(fileName: String, data: () -> InputStream) =
         fileName.lowercase().endsWith(".epub")
 
     override fun bookInfo(fileName: String, dataProvider: () -> InputStream): Book =
-        dataProvider().buffered().use { EpubBook(EpubReader().readEpub(it)) }
+        dataProvider().buffered().use { EpubBook(EpubReader().readEpub(it), fileName) }
+
+    override val readFormats: List<String> = listOf("epub")
+
 }
 
 private data class EpubBook(
@@ -38,9 +30,10 @@ private data class EpubBook(
     override val authors: List<Author>,
     override val genres: List<String>,
     override val sequenceName: String?,
-    override val sequenceNumber: Int?
+    override val sequenceNumber: Int?,
+    override val path: String,
 ) : Book {
-    constructor(book: io.documentnode.epub4j.domain.Book) : this(
+    constructor(book: Epub4JBook, path: String) : this(
         title = book.title,
         cover = book.coverImage?.data,
         coverContentType = book.coverImage.mediaType.name,
@@ -53,7 +46,8 @@ private data class EpubBook(
         },
         genres = book.metadata.subjects,
         sequenceName = book.metadata.getMetaAttribute("calibre:series"),
-        sequenceNumber = book.metadata.getMetaAttribute("calibre:series_index")?.toDoubleOrNull()?.toInt()
+        sequenceNumber = book.metadata.getMetaAttribute("calibre:series_index")?.toDoubleOrNull()?.toInt(),
+        path = path,
     )
 
     override fun equals(other: Any?): Boolean {
