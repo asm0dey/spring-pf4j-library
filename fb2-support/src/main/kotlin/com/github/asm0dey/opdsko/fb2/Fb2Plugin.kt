@@ -11,25 +11,26 @@ import java.nio.file.attribute.PosixFilePermission.*
 import kotlin.io.path.Path
 import kotlin.io.path.setPosixFilePermissions
 
-private const val FB2C_VERSION = "v1.76.2"
+private const val FB2C_VERSION = "v1.77.0"
 
 class Fb2Plugin : Plugin() {
     companion object {
         var epubConverterAccessible = false
-    }
-
-    private val os by lazy {
-        val osName = System.getProperty("os.name").lowercase()
-        when {
-            osName.contains("win") -> "win"
-            osName.contains("linux") -> "linux"
-            osName.contains("mac") -> "darwin"
-            else -> {
-                epubConverterAccessible = false
-                null
+        private val os by lazy {
+            val osName = System.getProperty("os.name").lowercase()
+            when {
+                osName.contains("win") -> "win"
+                osName.contains("linux") -> "linux"
+                osName.contains("mac") -> "darwin"
+                else -> {
+                    epubConverterAccessible = false
+                    null
+                }
             }
         }
+
     }
+
 
     override fun start() {
         super.start()
