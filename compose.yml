@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: opdsko
+    ports:
+      - "5432:5432"
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: meilisearch
+    environment:
+      MEILI_MASTER_KEY: random_master_key_12345
+    ports:
+      - "7700:7700"
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+
+#volumes:
+#  postgres_data:

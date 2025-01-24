@@ -1,14 +1,20 @@
 spring:
+  docker:
+    compose:
+      enabled: true
+      lifecycle-management: start_and_stop
+      skip:
+        in-tests: false
   application:
     name: opdsko-spring
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
+    url: jdbc:postgresql://localhost:5432/opdsko
     username: postgres
     password: password
 
 logging:
   level:
-    root: debug
+    root: info
     com.zaxxer: info
     io.netty: info
     javax: info
@@ -29,8 +35,9 @@ scanner:
     - /home/finkel/Books/
 
 meilisearch:
-  host: http://127.0.0.1:7700
-  api-key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1
+  host: 127.0.0.1
+  port: 7700
+  api-key: random_master_key_12345
 
 pf4j:
   plugin-dir: plugins

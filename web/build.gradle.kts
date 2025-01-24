@@ -30,9 +30,11 @@ repositories {
 
 dependencies {
     api(project(":common"))
+    developmentOnly(libs.spring.boot.docker.compose)
 //    api(project(":epub-support", configuration = "shadow"))
 //    api(project(":fb2-support", configuration = "shadow"))
 //    api(project(":fb2-support"))
+    implementation(project(":spring-meilisearch"))
     implementation(libs.commons.codec)
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
@@ -58,12 +60,12 @@ dependencies {
     implementation(platform(BOM_COORDINATES))
     kapt(libs.pf4j)
     implementation(libs.pf4j)
-/*
-    implementation(libs.pf4j.spring) {
-        exclude("org.slf4j")
-        exclude("org.springframework")
-    }
-*/
+    /*
+        implementation(libs.pf4j.spring) {
+            exclude("org.slf4j")
+            exclude("org.springframework")
+        }
+    */
     runtimeOnly(libs.bulma)
     runtimeOnly(libs.font.awesome)
     runtimeOnly(libs.htmx.org)

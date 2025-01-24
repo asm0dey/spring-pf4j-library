@@ -7,23 +7,26 @@ jooq = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta4" }
-spring-boot = { id = "org.springframework.boot", version = "3.4.1" }
+shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta6" }
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependencies = { id = "io.spring.dependency-management", version = "1.1.6" }
 
 [versions]
 
 kotlin = "2.1.0"
+##  ⬆ = "2.1.10-RC"
+##  ⬆ = "2.1.10-RC2"
 ##  ⬆ = "2.1.20-Beta1"
-kotlinx-html = "0.11.0"
-jooq = "3.19.16"
+kotlinx-html = "0.12.0"
+jooq = "3.19.18"
 tinylog = "2.7.0"
 pf4j = "3.13.0"
+spring-boot = "3.4.2"
 
 [libraries]
 
 bulma = "org.webjars.npm:bulma:1.0.2"
-commons-codec = "commons-codec:commons-codec:1.17.1"
+commons-codec = "commons-codec:commons-codec:1.17.2"
 epub4j = "io.documentnode:epub4j-core:4.2.2"
 flyway-core = { module = "org.flywaydb:flyway-core" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
@@ -40,16 +43,17 @@ kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
 kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor" }
 kotlinx-html-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-html-jvm", version.ref = "kotlinx-html" }
-kotlinx-serialization-protobuf = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.7.3"
-kotlinx-serialization-json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3"
+kotlinx-serialization-protobuf = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.0"
+kotlinx-serialization-json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0"
 pf4j = { module = "org.pf4j:pf4j", version.ref = "pf4j" }
 pf4j-spring = "org.pf4j:pf4j-spring:0.9.0"
-postgresql = "org.postgresql:postgresql:42.7.4"
+postgresql = "org.postgresql:postgresql:42.7.5"
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions" }
 reflections = "org.reflections:reflections:0.10.2"
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-jooq = { module = "org.springframework.boot:spring-boot-starter-jooq" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
@@ -58,3 +62,4 @@ tinylog-kotlin = { module = "org.tinylog:tinylog-api-kotlin", version.ref = "tin
 tinylog-slf4j = { module = "org.tinylog:slf4j-tinylog", version.ref = "tinylog" }
 zip4j = "net.lingala.zip4j:zip4j:2.11.5"
 meilisearch = "com.meilisearch.sdk:meilisearch-java:0.14.2"
+spring-boot-docker-compose = { module = "org.springframework.boot:spring-boot-docker-compose", version.ref = "spring-boot" }

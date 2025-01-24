@@ -1,0 +1,1 @@
+org.springframework.boot.autoconfigure.service.connection.ConnectionDetailsFactory=com.github.asm0dey.opdsko_spring.meilisearch.MeilisearchDockerComposeConnectionDetailsFactory

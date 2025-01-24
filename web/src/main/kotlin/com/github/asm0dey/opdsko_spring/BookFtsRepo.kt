@@ -2,18 +2,9 @@ package com.github.asm0dey.opdsko_spring
 
 import com.meilisearch.sdk.Client
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 
-@Component
-@ConfigurationProperties(prefix = "meilisearch")
-class MeilisearchProperties {
-    var apiKey: String? = null
-    var host: String = ""
-}
 
 @Serializable
 data class BookIndexItem(val id: Long, val name: String)

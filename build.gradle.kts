@@ -1,5 +1,3 @@
-import org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
-
 plugins {
     alias(libs.plugins.kotlin.jvm)
 //    alias(libs.plugins.spring.dependencies)

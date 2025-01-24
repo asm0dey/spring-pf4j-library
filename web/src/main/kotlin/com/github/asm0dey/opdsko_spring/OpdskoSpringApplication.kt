@@ -1,7 +1,5 @@
 package com.github.asm0dey.opdsko_spring
 
-import com.meilisearch.sdk.Client
-import com.meilisearch.sdk.Config
 import generated.jooq.tables.interfaces.IAuthor
 import generated.jooq.tables.interfaces.IBook
 import generated.jooq.tables.pojos.Author
@@ -77,29 +75,6 @@ class MyRuntimeHintsRegistrar : RuntimeHintsRegistrar {
             hint.serialization().registerType(type!!)
         })
     }
-}
-
-@Configuration
-class SpringConfiguration {
-/*
-    @Bean
-    fun pluginManager(
-        ctx: ApplicationContext,
-        @Value("\${pf4j.plugin-dir}") pluginDir: String,
-    ): PluginManager = SpringPluginManager(Paths.get(pluginDir).toAbsolutePath().also(::println))
-        .apply {
-            applicationContext = ctx
-            init()
-        }
-*/
-
-    @Bean
-    fun meiliSearch(props: MeilisearchProperties): Client {
-        val client = Client(Config(props.host, props.apiKey ?: ""))
-        client.index("books").addDocuments("""[{"id": 1, "name": "x"}]""")
-        return client
-    }
-
 }
 
 @Suppress("ArrayInDataClass")
