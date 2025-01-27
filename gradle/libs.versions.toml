@@ -9,7 +9,7 @@ kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotl
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta6" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
-spring-dependencies = { id = "io.spring.dependency-management", version = "1.1.6" }
+spring-dependencies = { id = "io.spring.dependency-management", version = "1.1.7" }
 
 [versions]
 
