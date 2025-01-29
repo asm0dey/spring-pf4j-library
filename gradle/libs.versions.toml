@@ -32,7 +32,7 @@ flyway-core = { module = "org.flywaydb:flyway-core" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 font-awesome = "org.webjars.npm:font-awesome:4.7.0"
 htmx-org = "org.webjars.npm:htmx.org:2.0.4"
-htmx-spring-boot = "io.github.wimdeblauwe:htmx-spring-boot:3.5.1"
+htmx-spring-boot = "io.github.wimdeblauwe:htmx-spring-boot:3.6.3"
 hyperscript = "org.webjars.npm:hyperscript.org:0.9.13"
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 jooq-kotlin = { module = "org.jooq:jooq-kotlin", version.ref = "jooq" }
