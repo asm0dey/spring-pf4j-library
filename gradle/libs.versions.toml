@@ -26,7 +26,7 @@ spring-boot = "3.4.2"
 [libraries]
 
 bulma = "org.webjars.npm:bulma:1.0.2"
-commons-codec = "commons-codec:commons-codec:1.17.2"
+commons-codec = "commons-codec:commons-codec:1.18.0"
 epub4j = "io.documentnode:epub4j-core:4.2.2"
 flyway-core = { module = "org.flywaydb:flyway-core" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
