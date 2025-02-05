@@ -1,13 +1,23 @@
 services:
   postgres:
-    image: postgres:17-alpine
-    container_name: postgres
+    image: ghcr.io/ferretdb/postgres-documentdb:16
+    restart: on-failure
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: opdsko
+      - POSTGRES_USER=username
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=postgres
+    # volumes:
+    #   - ./data:/var/lib/postgresql/data
+
+  ferretdb:
+    image: ghcr.io/ferretdb/ferretdb:2
+    restart: on-failure
     ports:
-      - "5432:5432"
+      - 27017:27017
+    environment:
+      - FERRETDB_POSTGRESQL_URL=postgres://username:password@postgres:5432/postgres
+    labels:
+      org.springframework.boot.service-connection: mongo
   meilisearch:
     image: getmeili/meilisearch:latest
     container_name: meilisearch

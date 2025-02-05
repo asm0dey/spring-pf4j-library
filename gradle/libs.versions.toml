@@ -9,11 +9,11 @@ kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotl
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta6" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
-spring-dependencies = { id = "io.spring.dependency-management", version = "1.1.6" }
+spring-dependencies = { id = "io.spring.dependency-management", version = "1.1.7" }
 
 [versions]
 
-kotlin = "2.1.0"
+kotlin = "2.1.10"
 ##  ⬆ = "2.1.10-RC"
 ##  ⬆ = "2.1.10-RC2"
 ##  ⬆ = "2.1.20-Beta1"
@@ -25,7 +25,7 @@ spring-boot = "3.4.2"
 
 [libraries]
 
-bulma = "org.webjars.npm:bulma:1.0.2"
+bulma = "org.webjars.npm:bulma:1.0.3"
 commons-codec = "commons-codec:commons-codec:1.17.2"
 epub4j = "io.documentnode:epub4j-core:4.2.2"
 flyway-core = { module = "org.flywaydb:flyway-core" }
@@ -39,6 +39,7 @@ jooq-kotlin = { module = "org.jooq:jooq-kotlin", version.ref = "jooq" }
 jooq-kotlin-coroutines = { module = "org.jooq:jooq-kotlin-coroutines", version.ref = "jooq" }
 jsoup = "org.jsoup:jsoup:1.18.3"
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter",version="5.11.4" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
 kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor" }
@@ -52,7 +53,10 @@ reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-
 reflections = "org.reflections:reflections:0.10.2"
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-jooq = { module = "org.springframework.boot:spring-boot-starter-jooq" }
-spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test",version.ref="spring-boot" }
+spring-boot-test = { module = "org.springframework.boot:spring-boot-test",version.ref="spring-boot" }
+assertj-core = { module = "org.assertj:assertj-core", version = "3.27.3" }
+spring-boot-starter-mongo = { module = "org.springframework.boot:spring-boot-starter-data-mongodb-reactive" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }

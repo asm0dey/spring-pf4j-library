@@ -1,9 +1,7 @@
 package com.github.asm0dey.opdsko_spring
 
-import com.github.asm0dey.opdsko.common.Book
 import com.github.asm0dey.opdsko.common.BookHandler
 import com.github.asm0dey.opdsko.common.DelegatingBookHandler
-import generated.jooq.tables.interfaces.IBook
 import net.lingala.zip4j.ZipFile
 import org.springframework.context.annotation.DependsOn
 import org.springframework.stereotype.Service
@@ -11,19 +9,20 @@ import java.io.File
 import java.text.StringCharacterIterator
 import kotlin.math.abs
 import kotlin.math.sign
+import com.github.asm0dey.opdsko.common.Book as CommonBook
 
 @Service
 @DependsOn("springPluginManager")
 class BookService(val bookHandlers: List<BookHandler>, val delegates: List<DelegatingBookHandler>) {
     fun imageTypes(books: List<BookWithInfo>) = books
-        .map { Triple(it.id, it.book.path!!, it.book.zipFile) }
+        .map { Triple(it.id, it.path, it.zipFile) }
         .associate { (id, path, zipFile) ->
             val fb = obtainBook(zipFile, path)
             val type = fb?.coverContentType
             id to type
         }
 
-    fun obtainBook(zipFile: String?, path: String): Book? {
+    fun obtainBook(zipFile: String?, path: String): CommonBook? {
         val dataExtractor = {
             if (zipFile == null) File(path).inputStream() else {
                 val zip = ZipFile(zipFile)
@@ -37,7 +36,7 @@ class BookService(val bookHandlers: List<BookHandler>, val delegates: List<Deleg
             ?.bookInfo(path, dataExtractor)
     }
 
-    fun obtainBooks(absolutePath: String): Sequence<Book?> {
+    fun obtainBooks(absolutePath: String): Sequence<CommonBook?> {
         val file = File(absolutePath)
         return delegates
             .firstOrNull { it.supportFile(file) }
@@ -49,8 +48,8 @@ class BookService(val bookHandlers: List<BookHandler>, val delegates: List<Deleg
             )
     }
 
-    private val IBook.size
-        get() = if (zipFile == null) File(path!!).length().humanReadable() else {
+    private val Book.sizeHr
+        get() = if (zipFile == null) File(path).length().humanReadable() else {
             ZipFile(zipFile).getFileHeader(path).uncompressedSize.humanReadable()
         }
 
@@ -72,13 +71,13 @@ class BookService(val bookHandlers: List<BookHandler>, val delegates: List<Deleg
     }
 
     fun shortDescriptions(bookWithInfos: List<BookWithInfo>) =
-        bookWithInfos.map { it.id to it.book }
+        bookWithInfos.map { it.id to it }
             .associate { (id, book) ->
                 val size = book.size
                 val seq = book.sequence
                 val seqNo = book.sequenceNumber
 
-                val fb = obtainBook(book.zipFile, book.path!!)
+                val fb = obtainBook(book.zipFile, book.path)
 
 
                 val descr = fb?.annotation ?: ""
