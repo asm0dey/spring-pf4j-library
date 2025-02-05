@@ -179,14 +179,14 @@ class HtmxHandler(val repo: BookRepo, val service: BookService) {
     @Suppress("FunctionName")
     private fun DIV.BookTile(
         bookWithInfo: BookWithInfo,
-        images: Map<Long, String?>,
-        descriptionsShort: Map<Long, String?>
+        images: Map<String, String?>,
+        descriptionsShort: Map<String, String?>
     ) {
         div("cell") {
             div("card") {
                 div("card-header") {
                     p("card-header-title") {
-                        +bookWithInfo.book.name!!
+                        +bookWithInfo.name
                     }
                 }
                 if (images[bookWithInfo.id] != null) {

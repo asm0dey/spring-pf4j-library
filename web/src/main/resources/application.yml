@@ -7,10 +7,10 @@ spring:
         in-tests: false
   application:
     name: opdsko-spring
-  datasource:
-    url: jdbc:postgresql://localhost:5432/opdsko
-    username: postgres
-    password: password
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/opdsko
+#    username: postgres
+#    password: password
 
 logging:
   level:

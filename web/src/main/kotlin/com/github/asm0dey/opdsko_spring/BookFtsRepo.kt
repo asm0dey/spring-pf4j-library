@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository
 
 
 @Serializable
-data class BookIndexItem(val id: Long, val name: String)
+data class BookIndexItem(val id: String, val name: String)
 
 @Repository
 class Meilisearch(val client: Client) {
@@ -22,5 +22,5 @@ class Meilisearch(val client: Client) {
     }
 
     fun search(query: String) =
-        client.index("books").search(query).hits.map { BookIndexItem(it["id"] as Long, it["name"] as String) }
+        client.index("books").search(query).hits.map { BookIndexItem(it["id"] as String, it["name"] as String) }
 }

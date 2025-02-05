@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.spring.boot)
 //    alias(libs.plugins.spring.dependencies)
     alias(libs.plugins.graalvm)
-    alias(libs.plugins.jooq)
+//    alias(libs.plugins.jooq)
     application
     kotlin("kapt")
 }
@@ -39,8 +39,8 @@ dependencies {
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)
     implementation(libs.jackson.module.kotlin)
-    implementation(libs.jooq.kotlin)
-    implementation(libs.jooq.kotlin.coroutines)
+//    implementation(libs.jooq.kotlin)
+//    implementation(libs.jooq.kotlin.coroutines)
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlinx.coroutines.reactor)
     implementation(libs.kotlinx.serialization.json)
@@ -48,7 +48,8 @@ dependencies {
     implementation(libs.reactor.kotlin.extensions)
     implementation(libs.reflections)
     implementation(libs.spring.boot.starter.actuator)
-    implementation(libs.spring.boot.starter.jooq)
+//    implementation(libs.spring.boot.starter.jooq)
+    implementation(libs.spring.boot.starter.mongo)
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.meilisearch)
@@ -56,7 +57,7 @@ dependencies {
 //    implementation(libs.tinylog.kotlin)
 //    implementation(libs.tinylog.slf4j)
     implementation(libs.zip4j)
-    jooqCodegen(libs.postgresql)
+//    jooqCodegen(libs.postgresql)
     implementation(platform(BOM_COORDINATES))
     kapt(libs.pf4j)
     implementation(libs.pf4j)
@@ -86,6 +87,7 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+/*
 jooq {
     configuration {
         logging = org.jooq.meta.jaxb.Logging.INFO
@@ -126,6 +128,7 @@ jooq {
         }
     }
 }
+*/
 
 
 
