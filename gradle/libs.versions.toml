@@ -3,13 +3,11 @@
 [plugins]
 
 graalvm = { id = "org.graalvm.buildtools.native", version = "0.10.5" }
-##                                                     ⬆ = "0.10.5" }
 jooq = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta7" }
-##                                          ⬆ = "9.0.0-beta7" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependencies = { id = "io.spring.dependency-management", version = "1.1.7" }
 
@@ -26,9 +24,9 @@ spring-boot = "3.4.2"
 
 [libraries]
 
+assertj-core = { module = "org.assertj:assertj-core", version = "3.27.3" }
 bulma = "org.webjars.npm:bulma:1.0.3"
 commons-codec = "commons-codec:commons-codec:1.18.0"
-##                                       ⬆ :1.18.0"
 epub4j = "io.documentnode:epub4j-core:4.2.2"
 flyway-core = { module = "org.flywaydb:flyway-core" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
@@ -40,33 +38,27 @@ jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-
 jooq-kotlin = { module = "org.jooq:jooq-kotlin", version.ref = "jooq" }
 jooq-kotlin-coroutines = { module = "org.jooq:jooq-kotlin-coroutines", version.ref = "jooq" }
 jsoup = "org.jsoup:jsoup:1.18.3"
-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
-junit-jupiter = { module = "org.junit.jupiter:junit-jupiter",version="5.11.4" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.11.4" }
 ##                                                              ⬆ = "5.12.0-M1" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
 kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor" }
 kotlinx-html-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-html-jvm", version.ref = "kotlinx-html" }
-kotlinx-serialization-protobuf = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.0"
 kotlinx-serialization-json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0"
+kotlinx-serialization-protobuf = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.0"
+meilisearch = "com.meilisearch.sdk:meilisearch-java:0.14.2"
 pf4j = { module = "org.pf4j:pf4j", version.ref = "pf4j" }
-pf4j-spring = "org.pf4j:pf4j-spring:0.9.0"
 postgresql = "org.postgresql:postgresql:42.7.5"
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions" }
 reflections = "org.reflections:reflections:0.10.2"
-spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
-spring-boot-starter-jooq = { module = "org.springframework.boot:spring-boot-starter-jooq" }
-spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test",version.ref="spring-boot" }
-spring-boot-test = { module = "org.springframework.boot:spring-boot-test",version.ref="spring-boot" }
-assertj-core = { module = "org.assertj:assertj-core", version = "3.27.3" }
-spring-boot-starter-mongo = { module = "org.springframework.boot:spring-boot-starter-data-mongodb-reactive" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
-spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
-spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
-spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
-tinylog = { module = "org.tinylog:tinylog-impl", version.ref = "tinylog" }
-tinylog-kotlin = { module = "org.tinylog:tinylog-api-kotlin", version.ref = "tinylog" }
-tinylog-slf4j = { module = "org.tinylog:slf4j-tinylog", version.ref = "tinylog" }
-zip4j = "net.lingala.zip4j:zip4j:2.11.5"
-meilisearch = "com.meilisearch.sdk:meilisearch-java:0.14.2"
 spring-boot-docker-compose = { module = "org.springframework.boot:spring-boot-docker-compose", version.ref = "spring-boot" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-mongo = { module = "org.springframework.boot:spring-boot-starter-data-mongodb-reactive" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test", version.ref = "spring-boot" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
+spring-boot-test = { module = "org.springframework.boot:spring-boot-test", version.ref = "spring-boot" }
+zip4j = "net.lingala.zip4j:zip4j:2.11.5"
+seaweedfs = "com.seaweedfs:seaweedfs-client:3.80"
