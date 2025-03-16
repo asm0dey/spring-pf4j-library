@@ -1,6 +1,5 @@
-package com.github.asm0dey.opdsko.fb2
+package com.github.asm0dey.opdsko.converter.fb2toepub
 
-import net.lingala.zip4j.ZipFile
 import org.pf4j.Plugin
 import java.io.File
 import java.io.FileOutputStream
@@ -11,9 +10,9 @@ import java.nio.file.attribute.PosixFilePermission.*
 import kotlin.io.path.Path
 import kotlin.io.path.setPosixFilePermissions
 
-private const val FB2C_VERSION = "v1.77.0"
+private const val FB2C_VERSION = "v1.77.1"
 
-class Fb2Plugin : Plugin() {
+class Fb2ToEpubConverterPlugin : Plugin() {
     companion object {
         var epubConverterAccessible = false
         private val os by lazy {
@@ -28,9 +27,7 @@ class Fb2Plugin : Plugin() {
                 }
             }
         }
-
     }
-
 
     override fun start() {
         super.start()
@@ -79,7 +76,7 @@ class Fb2Plugin : Plugin() {
             """.trimMargin()
                 )
             }
-            ZipFile(targetFile).use {
+            net.lingala.zip4j.ZipFile(targetFile).use {
                 val myHeader = it.fileHeaders.first { it.fileName.startsWith("fb2c") }
                 it.extractFile(
                     myHeader,
@@ -90,6 +87,7 @@ class Fb2Plugin : Plugin() {
             }
             setConfig()
             log.info("Unpacked. Resuming application launch.")
+            epubConverterAccessible = true
         }
     }
 
@@ -116,11 +114,9 @@ class Fb2Plugin : Plugin() {
         }
     }
 
-
     private fun posixSetAccessible(fileName: String) =
         try {
             Path(fileName).setPosixFilePermissions(setOf(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE))
         } catch (_: Exception) {
         }
-
 }

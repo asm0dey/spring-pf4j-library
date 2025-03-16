@@ -1,0 +1,9 @@
+# Basic configuration for fb2c
+# This file is used by the FB2 to EPUB converter
+
+# Output format
+format = "epub"
+
+# Conversion options
+[convert]
+# Default options for conversion
