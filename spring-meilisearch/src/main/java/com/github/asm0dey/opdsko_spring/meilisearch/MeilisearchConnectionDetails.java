@@ -6,5 +6,6 @@ import java.net.InetSocketAddress;
 
 public interface MeilisearchConnectionDetails extends ConnectionDetails {
     InetSocketAddress address();
+
     String key();
 }

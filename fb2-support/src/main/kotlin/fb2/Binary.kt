@@ -10,6 +10,7 @@ import org.w3c.dom.Node
 class Binary : IdElement {
     @ProtoNumber(2)
     var contentType: String? = null
+
     @ProtoNumber(3)
     lateinit var binary: ByteArray
 

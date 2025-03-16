@@ -8,10 +8,13 @@ import org.w3c.dom.Node
 class Cite : Element {
     @ProtoNumber(1)
     var id: String? = null
+
     @ProtoNumber(2)
     var lang: String? = null
+
     @ProtoNumber(3)
     protected var elements: ArrayList<Element> = arrayListOf()
+
     @ProtoNumber(4)
     protected var textAuthor: ArrayList<TextAuthor> = arrayListOf()
 
@@ -35,7 +38,8 @@ class Cite : Element {
                 "poem" -> elements.add(Poem(paragraph))
                 "subtitle" -> elements.add(Subtitle(paragraph))
                 "p" -> elements.add(P(paragraph))
-                "empty-line" -> elements.add(EmptyLine()) }
+                "empty-line" -> elements.add(EmptyLine())
+            }
         }
     }
 

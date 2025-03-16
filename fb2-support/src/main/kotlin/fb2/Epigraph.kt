@@ -9,6 +9,7 @@ import org.w3c.dom.Node
 class Epigraph : IdElement {
     @ProtoNumber(2)
     var elements = ArrayList<Element>()
+
     @ProtoNumber(3)
     var textAuthor: ArrayList<TextAuthor>? = ArrayList()
 

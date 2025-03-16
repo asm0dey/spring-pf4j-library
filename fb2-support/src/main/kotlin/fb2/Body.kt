@@ -10,14 +10,19 @@ import org.w3c.dom.Node
 class Body {
     @ProtoNumber(1)
     var lang: String? = null
+
     @ProtoNumber(2)
     var name: String? = null
+
     @ProtoNumber(3)
     var title: Title? = null
+
     @ProtoNumber(4)
     var image: Image? = null
+
     @ProtoNumber(5)
     var sections = ArrayList<Section>()
+
     @ProtoNumber(6)
     var epigraphs: ArrayList<Epigraph>? = null
 

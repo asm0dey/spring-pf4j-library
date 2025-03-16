@@ -1,12 +1,12 @@
 package com.github.asm0dey.opdsko_spring
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.*
 import java.time.LocalDateTime
 
 /**
  * Tests for the file name generation and content type determination functionality.
- * 
+ *
  * This test class implements the same logic as the private methods in HtmxHandler,
  * but in a way that doesn't require all the dependencies.
  */
@@ -16,7 +16,7 @@ class FileNameGenerationTests {
      * Generates a file name from the book's metadata.
      * The format is: "BookName [SequenceName #SequenceNumber].extension"
      * If sequence name or number is not available, they are omitted.
-     * 
+     *
      * This is a copy of the logic in HtmxHandler.generateFileName.
      */
     private fun generateFileName(book: Book, extension: String): String {
@@ -41,7 +41,7 @@ class FileNameGenerationTests {
 
     /**
      * Determines the content type based on the file extension.
-     * 
+     *
      * This is a copy of the logic in HtmxHandler.getContentTypeForExtension.
      */
     private fun getContentTypeForExtension(extension: String): String {

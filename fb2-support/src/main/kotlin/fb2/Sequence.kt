@@ -10,6 +10,7 @@ class Sequence {
     @ProtoNumber(1)
     var name: String? = null
         protected set
+
     @ProtoNumber(2)
     var number: String? = null
         protected set

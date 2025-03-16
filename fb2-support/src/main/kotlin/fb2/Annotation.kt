@@ -17,8 +17,10 @@ open class Annotation : IdElement {
     @ProtoNumber(2)
     var text = ""
         private set
+
     @ProtoNumber(3)
     var lang: String? = null
+
     @ProtoNumber(4)
     var elements: ArrayList<Element>? = null
 

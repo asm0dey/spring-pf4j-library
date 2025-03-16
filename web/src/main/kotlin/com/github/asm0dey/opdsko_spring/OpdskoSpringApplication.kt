@@ -51,6 +51,15 @@ class RoutingConfig {
             GET("", htmxHandler::homePage)
             GET("/search", htmxHandler::search)
             GET("/new/{page}", htmxHandler::new)
+
+            // Author navigation routes
+            GET("/author", htmxHandler::authorFirstLevel)
+            GET("/author/{prefix}", htmxHandler::authorPrefixLevel)
+            GET("/author/view/{lastName}/{firstName}", htmxHandler::authorView)
+            GET("/author/view/{lastName}/{firstName}/series", htmxHandler::authorSeries)
+            GET("/author/view/{lastName}/{firstName}/series/{series}", htmxHandler::authorSeriesBooks)
+            GET("/author/view/{lastName}/{firstName}/noseries", htmxHandler::authorNoSeriesBooks)
+            GET("/author/view/{lastName}/{firstName}/all", htmxHandler::authorAllBooks)
         }
         GET("/opds/book/{id}/download", htmxHandler::downloadBook)
         GET("/opds/book/{id}/download/{format}", htmxHandler::downloadBook)

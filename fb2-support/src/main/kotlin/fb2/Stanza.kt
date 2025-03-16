@@ -29,6 +29,7 @@ class Stanza {
 
     @ProtoNumber(1)
     var title: ArrayList<Title> = arrayListOf()
+
     @ProtoNumber(2)
     var stanza: ArrayList<Element> = arrayListOf()
     override fun equals(other: Any?): Boolean {

@@ -10,14 +10,18 @@ class Poem : Element {
     @ProtoNumber(1)
     var title: Title? = null
         protected set
+
     @ProtoNumber(2)
     var epigraphs: ArrayList<Epigraph>? = null
         protected set
+
     @ProtoNumber(3)
     protected var stanza = ArrayList<Stanza>()
+
     @ProtoNumber(4)
     var textAuthor: String? = null
         protected set
+
     @ProtoNumber(5)
     var date: String? = null
         protected set
