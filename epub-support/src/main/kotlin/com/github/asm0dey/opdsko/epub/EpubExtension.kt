@@ -6,6 +6,7 @@ import com.github.asm0dey.opdsko.common.Book
 import com.github.asm0dey.opdsko.common.BookHandler
 import io.documentnode.epub4j.epub.EpubReader
 import org.pf4j.Extension
+import java.io.File
 import java.io.InputStream
 import io.documentnode.epub4j.domain.Book as Epub4JBook
 
@@ -17,6 +18,8 @@ class EpubBookHandler : BookHandler {
 
     override fun bookInfo(fileName: String, dataProvider: () -> InputStream): Book =
         dataProvider().buffered().use { EpubBook(EpubReader().readEpub(it), fileName) }
+
+    override fun getData(path: String): InputStream = File(path).inputStream()
 
     override val readFormats: List<String> = listOf("epub")
 

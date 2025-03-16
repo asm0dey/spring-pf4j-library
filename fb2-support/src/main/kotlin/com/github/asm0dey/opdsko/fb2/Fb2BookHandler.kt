@@ -5,6 +5,7 @@ import com.github.asm0dey.opdsko.common.Book
 import com.github.asm0dey.opdsko.common.BookHandler
 import fb2.FictionBook
 import org.pf4j.Extension
+import java.io.File
 import java.io.InputStream
 
 @Extension(points = [BookHandler::class])
@@ -13,6 +14,8 @@ class Fb2BookHandler : BookHandler {
 
     override fun bookInfo(fileName: String, dataProvider: () -> InputStream): Book =
         Fb2Book(FictionBook(fileName, dataProvider), fileName)
+
+    override fun getData(path: String): InputStream = File(path).inputStream()
 
     override val readFormats: List<String>
         get() = listOf("fb2")

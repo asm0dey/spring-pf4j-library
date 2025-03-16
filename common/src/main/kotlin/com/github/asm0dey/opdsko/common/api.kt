@@ -7,6 +7,7 @@ import java.io.InputStream
 interface BookHandler : ExtensionPoint {
     fun supportsFile(fileName: String, data: () -> InputStream): Boolean
     fun bookInfo(fileName: String, dataProvider: () -> InputStream): Book
+    fun getData(path: String): InputStream
     val readFormats: List<String>
 }
 
@@ -15,11 +16,12 @@ interface DelegatingBookHandler : ExtensionPoint {
     fun obtainBooks(file: File, handlers: Collection<BookHandler>): Sequence<Book>
     fun supportsPath(path: String): Boolean
     fun obtainBook(path: String, handlers: Collection<BookHandler>): Book
+    fun getData(path: String, handlers: Collection<BookHandler>): InputStream
 }
 
 /**
  * Extension point for format converters.
- * Implementations of this interface can convert files from one format to another.
+ * Implementations of this interface can convert content from one format to another.
  */
 interface FormatConverter : ExtensionPoint {
     /**
@@ -33,22 +35,21 @@ interface FormatConverter : ExtensionPoint {
     val targetFormat: String
 
     /**
-     * Checks if this converter can convert the given file.
+     * Checks if this converter can convert the given content.
      *
-     * @param file The file to check.
-     * @return True if this converter can convert the file, false otherwise.
+     * @param sourceFormat The format of the content to check.
+     * @return True if this converter can convert the content, false otherwise.
      */
-    fun canConvert(file: File): Boolean
+    fun canConvert(sourceFormat: String): Boolean
 
     /**
-     * Converts the given file to the target format.
+     * Converts the given input stream to the target format.
      *
-     * @param sourceFile The file to convert.
-     * @param targetFile The file to write the converted content to. If null, a new file will be created
-     *                   with the same name as the source file but with the target format extension.
-     * @return The converted file.
+     * @param inputStream The input stream to convert.
+     * @return The converted content as an input stream.
      */
-    fun convert(sourceFile: File, targetFile: File? = null): File
+    fun convert(inputStream: InputStream): InputStream
+
 }
 
 data class DelegatingBook(
@@ -117,4 +118,3 @@ data class DelegatingBook(
     }
 
 }
-

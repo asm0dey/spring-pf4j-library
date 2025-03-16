@@ -7,6 +7,7 @@ import com.github.asm0dey.opdsko.common.DelegatingBookHandler
 import net.lingala.zip4j.ZipFile
 import org.pf4j.Extension
 import java.io.File
+import java.io.InputStream
 
 private const val ZIP_PREFIX = "zip::"
 
@@ -42,5 +43,12 @@ class ZipBookHandler : DelegatingBookHandler {
             val book = handler.bookInfo(bookPath) { zip.getInputStream(zip.getFileHeader(bookPath)) }
             DelegatingBook(book).also { it.path = path }
         }
+    }
+
+    override fun getData(path: String, handlers: Collection<BookHandler>): InputStream {
+        val zipPath = path.substringAfter(ZIP_PREFIX).substringBefore(ZIP_DELIMITER) + ZIP_EXTENSION
+        val bookPath = path.substringAfter(ZIP_DELIMITER)
+        val zip = ZipFile(File(zipPath))
+        return zip.getInputStream(zip.getFileHeader(bookPath))
     }
 }
