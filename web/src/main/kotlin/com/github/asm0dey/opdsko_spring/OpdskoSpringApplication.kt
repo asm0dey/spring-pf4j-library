@@ -122,8 +122,7 @@ data class Book(
     val name: String,
     val added: LocalDateTime = LocalDateTime.now(),
     val size: Long,
-    val path: String,
-    val zipFile: String?
+    val path: String
 )
 
 data class Author(val lastName: String, val firstName: String)
