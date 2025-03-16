@@ -2,6 +2,8 @@ services:
   postgres:
     image: ghcr.io/ferretdb/postgres-documentdb:16
     restart: on-failure
+    ports:
+      - 5433:5432
     environment:
       - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password
@@ -16,6 +18,8 @@ services:
       - 27017:27017
     environment:
       - FERRETDB_POSTGRESQL_URL=postgres://username:password@postgres:5432/postgres
+      - MONGODB_ROOT_USERNAME=username
+      - MONGODB_ROOT_PASSWORD=password
     labels:
       org.springframework.boot.service-connection: mongo
   meilisearch:

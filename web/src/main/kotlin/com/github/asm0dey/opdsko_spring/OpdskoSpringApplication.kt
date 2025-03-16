@@ -1,11 +1,16 @@
 package com.github.asm0dey.opdsko_spring
 
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ClassPathResource
+import org.springframework.data.annotation.Id
+import org.springframework.data.mongodb.core.index.Indexed
+import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -58,15 +63,39 @@ class Scanner(
     val settings: ScannerSettings,
     private val bookRepo: BookRepo,
     private val bookService: BookService,
+    private val meilisearch: Meilisearch,
 ) {
     suspend fun scan(request: ServerRequest): ServerResponse {
         for (file in settings.sources) {
             if (file.isDirectory) {
-                val books = file.walkTopDown().filter { it.isFile }
+                val books = file.walkTopDown()
+                    .filter { it.isFile }
                     .flatMap { bookService.obtainBooks(it.absolutePath) }
                     .filterNotNull()
+                    .map { commonBook ->
+                        Book(
+                            authors = commonBook.authors.map {
+                                Author(
+                                    lastName = it.lastName ?: "",
+                                    firstName = it.firstName ?: ""
+                                )
+                            },
+                            genres = commonBook.genres,
+                            sequence = commonBook.sequenceName,
+                            sequenceNumber = commonBook.sequenceNumber,
+                            name = commonBook.title,
+                            size = File(commonBook.path).length(),
+                            path = commonBook.path
+                        )
+                    }
                     .toList()
-//                bookRepo.save(toList)
+
+                // Save complete book information to MongoDB and get the saved books with MongoDB-generated IDs
+                val savedBooks = bookRepo.save(books)
+
+                // Save book names and IDs to Meilisearch using the MongoDB-generated IDs
+                val bookIndexItems = savedBooks.map { BookIndexItem(it.path, it.name) }.toList()
+                meilisearch.saveBooks(bookIndexItems)
             }
         }
         return ServerResponse.ok().buildAndAwait()
@@ -114,9 +143,9 @@ val genreNames by lazy(PUBLICATION) {
 
 typealias BookWithInfo = Book
 
-
+@Document
 data class Book(
-    val id: String = UUID.randomUUID().toString(),
+    @Id val id: String = UUID.randomUUID().toString(),
     val authors: List<Author>,
     var genres: List<String>,
     val sequence: String? = null,
@@ -124,7 +153,7 @@ data class Book(
     val name: String,
     val added: LocalDateTime = LocalDateTime.now(),
     val size: Long,
-    val path: String
+    @Indexed(unique = true) val path: String
 )
 
 data class Author(val lastName: String, val firstName: String)

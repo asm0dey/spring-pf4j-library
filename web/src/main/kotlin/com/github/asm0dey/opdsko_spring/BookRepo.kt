@@ -41,7 +41,7 @@ class BookRepo(
     }
 
     @Transactional
-    suspend fun save(toList: List<Book>) = bookMongoRepository.saveAll(toList).collect()
+    suspend fun save(toList: List<Book>) = bookMongoRepository.saveAll(toList)
 
     suspend fun newBooks(page: Int): List<BookWithInfo> = bookMongoRepository
         .findAllBy(PageRequest.of(page, 50, Sort.by(Sort.Direction.DESC, "added")))
