@@ -76,31 +76,38 @@ class Scanner(
 ) {
     suspend fun scan(request: ServerRequest): ServerResponse {
         for (file in settings.sources) {
-            if (file.isDirectory) {
-                val books = file.walkTopDown()
+            val books = if (file.isDirectory) {
+                file.walkTopDown()
                     .filter { it.isFile }
                     .flatMap { bookService.obtainBooks(it.absolutePath) }
-                    .filterNotNull()
-                    .map { commonBook ->
-                        Book(
-                            authors = commonBook.authors.map {
-                                Author(
-                                    lastName = it.lastName ?: "",
-                                    firstName = it.firstName ?: ""
-                                )
-                            },
-                            genres = commonBook.genres,
-                            sequence = commonBook.sequenceName,
-                            sequenceNumber = commonBook.sequenceNumber,
-                            name = commonBook.title,
-                            size = File(commonBook.path).length(),
-                            path = commonBook.path
-                        )
-                    }
-                    .toList()
+            } else {
+                // Process individual file
+                bookService.obtainBooks(file.absolutePath)
+            }
 
+            val processedBooks = books
+                .filterNotNull()
+                .map { commonBook ->
+                    Book(
+                        authors = commonBook.authors.map {
+                            Author(
+                                lastName = it.lastName ?: "",
+                                firstName = it.firstName ?: ""
+                            )
+                        },
+                        genres = commonBook.genres,
+                        sequence = commonBook.sequenceName,
+                        sequenceNumber = commonBook.sequenceNumber,
+                        name = commonBook.title,
+                        size = File(commonBook.path).length(),
+                        path = commonBook.path
+                    )
+                }
+                .toList()
+
+            if (processedBooks.isNotEmpty()) {
                 // Save complete book information to MongoDB and get the saved books with MongoDB-generated IDs
-                val savedBooks = bookRepo.save(books)
+                val savedBooks = bookRepo.save(processedBooks)
 
                 // Save book names and IDs to Meilisearch using the MongoDB-generated IDs
                 val bookIndexItems = savedBooks.map { BookIndexItem(it.path, it.name) }.toList()
