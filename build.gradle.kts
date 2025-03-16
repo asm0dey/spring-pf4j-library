@@ -29,9 +29,15 @@ val copyPlugins = tasks.register<Copy>("copyPlugins") {
     delete(fileTree("${layout.projectDirectory.asFile}/plugins") {
         include("*.jar")
     })
-    dependsOn(":fb2-support:shadowJar", ":epub-support:shadowJar", ":fb2-to-epub-converter:shadowJar")
+    dependsOn(
+        ":fb2-support:shadowJar",
+        ":epub-support:shadowJar",
+        ":fb2-to-epub-converter:shadowJar",
+        ":inpx-support:shadowJar"
+    )
     from(project(":fb2-support").tasks.named("shadowJar"))
     from(project(":epub-support").tasks.named("shadowJar"))
+    from(project(":inpx-support").tasks.named("shadowJar"))
     from(project(":fb2-to-epub-converter").tasks.named("shadowJar"))
     into("${layout.projectDirectory.asFile}/plugins")
     doLast {
