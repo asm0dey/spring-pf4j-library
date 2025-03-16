@@ -2,7 +2,7 @@
 
 [plugins]
 
-graalvm = { id = "org.graalvm.buildtools.native", version = "0.10.5" }
+graalvm = { id = "org.graalvm.buildtools.native", version = "0.10.6" }
 jooq = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
