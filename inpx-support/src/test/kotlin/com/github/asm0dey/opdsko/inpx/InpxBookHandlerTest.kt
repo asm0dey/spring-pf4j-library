@@ -12,7 +12,11 @@ class InpxBookHandlerTest {
     @Test
     fun `test supportsPath with valid path`() {
         val path = "inpx::/path/to/library.inpx#books.inp*book.fb2"
+        val path2 = "inpx::/path/to/library.inpx#books.inp*book.epub"
+        val path3 = "inpx::/path/to/library.inpx#books.inp*book"
         assertTrue(handler.supportsPath(path))
+        assertTrue(handler.supportsPath(path2))
+        assertTrue(handler.supportsPath(path3))
     }
 
     @Test
