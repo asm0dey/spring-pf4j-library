@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: ghcr.io/ferretdb/postgres-documentdb:16
+    image: ghcr.io/ferretdb/postgres-documentdb:17
     restart: on-failure
     ports:
       - 5433:5432
