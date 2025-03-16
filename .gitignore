@@ -40,3 +40,4 @@ out/
 .kotlin
 .env*
 fb2c*
+kls_database.db
