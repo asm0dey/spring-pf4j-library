@@ -2,12 +2,12 @@
 
 [plugins]
 
-graalvm = { id = "org.graalvm.buildtools.native", version = "0.10.5" }
+graalvm = { id = "org.graalvm.buildtools.native", version = "0.10.6" }
 jooq = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta7" }
+shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta10" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependencies = { id = "io.spring.dependency-management", version = "1.1.7" }
 
@@ -16,15 +16,19 @@ spring-dependencies = { id = "io.spring.dependency-management", version = "1.1.7
 kotlin = "2.1.10"
 ##  ⬆ = "2.1.20-Beta1"
 ##  ⬆ = "2.1.20-Beta2"
+##  ⬆ = "2.1.20-RC"
+##  ⬆ = "2.1.20-RC2"
+##  ⬆ = "2.1.20-RC3"
 kotlinx-html = "0.12.0"
 jooq = "3.19.18"
 tinylog = "2.7.0"
 pf4j = "3.13.0"
-spring-boot = "3.4.2"
+spring-boot = "3.4.3"
 
 [libraries]
 
 assertj-core = { module = "org.assertj:assertj-core", version = "3.27.3" }
+##                                                         ⬆ = "4.0.0-M1" }
 bulma = "org.webjars.npm:bulma:1.0.3"
 commons-codec = "commons-codec:commons-codec:1.18.0"
 epub4j = "io.documentnode:epub4j-core:4.2.2"
@@ -37,9 +41,8 @@ hyperscript = "org.webjars.npm:hyperscript.org:0.9.13"
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 jooq-kotlin = { module = "org.jooq:jooq-kotlin", version.ref = "jooq" }
 jooq-kotlin-coroutines = { module = "org.jooq:jooq-kotlin-coroutines", version.ref = "jooq" }
-jsoup = "org.jsoup:jsoup:1.18.3"
-junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.11.4" }
-##                                                              ⬆ = "5.12.0-M1" }
+jsoup = "org.jsoup:jsoup:1.19.1"
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.12.1" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
