@@ -2,9 +2,11 @@ package com.github.asm0dey.opdsko_spring
 
 import com.github.asm0dey.opdsko.common.BookHandler
 import com.github.asm0dey.opdsko.common.DelegatingBookHandler
+import com.github.asm0dey.opdsko.common.FormatConverter
 import org.springframework.context.annotation.DependsOn
 import org.springframework.stereotype.Service
 import java.io.File
+import java.io.InputStream
 import java.text.StringCharacterIterator
 import kotlin.math.abs
 import kotlin.math.sign
@@ -12,7 +14,12 @@ import com.github.asm0dey.opdsko.common.Book as CommonBook
 
 @Service
 @DependsOn("springPluginManager")
-class BookService(val bookHandlers: List<BookHandler>, val delegates: List<DelegatingBookHandler>) {
+class BookService(
+    val bookHandlers: List<BookHandler>, 
+    val delegates: List<DelegatingBookHandler>,
+    val bookMongoRepository: BookMongoRepository,
+    val formatConverters: List<FormatConverter>
+) {
     fun imageTypes(books: List<BookWithInfo>) = books
         .map { Pair(it.id, it.path) }
         .associate { (id, path) ->
@@ -83,4 +90,39 @@ class BookService(val bookHandlers: List<BookHandler>, val delegates: List<Deleg
                 id to text
             }
 
+    suspend fun getBookById(id: String): Book? {
+        return bookMongoRepository.findById(id)
+    }
+
+    fun getBookData(path: String): InputStream {
+        val delegatedBook = delegates
+            .firstOrNull { it.supportsPath(path) }
+        return if (delegatedBook != null) {
+            delegatedBook.getData(path, bookHandlers)
+        } else {
+            val handler = bookHandlers
+                .firstOrNull { it.supportsFile(path) { File(path).inputStream() } }
+                ?: throw IllegalArgumentException("No handler found for path: $path")
+            handler.getData(path)
+        }
+    }
+
+    fun convertBook(path: String, targetFormat: String): InputStream? {
+        // Get the source format from the path
+        val sourceFormat = path.substringAfterLast('.')
+
+        // Find a suitable converter
+        val converter = formatConverters.firstOrNull { 
+            it.sourceFormat.equals(sourceFormat, ignoreCase = true) && 
+            it.targetFormat.equals(targetFormat, ignoreCase = true) 
+        } ?: return null
+
+        // Check if the converter can handle this format
+        if (!converter.canConvert(sourceFormat)) {
+            return null
+        }
+
+        // Get the book data as a stream and convert it
+        return getBookData(path).use { converter.convert(it) }
+    }
 }

@@ -3,6 +3,9 @@ package com.github.asm0dey.opdsko_spring
 import com.github.asm0dey.opdsko.common.FormatConverter
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
+import org.springframework.core.io.InputStreamResource
+import org.springframework.http.ContentDisposition
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.*
@@ -219,15 +222,26 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
                         +"Info"
                     }
                     // Check if there are any format converters available for this book
-                    val availableConverters = formatConverters.filter { it.sourceFormat.equals(bookWithInfo.path.substringAfterLast('.'), ignoreCase = true) }
+                    val availableConverters = formatConverters.filter {
+                        it.sourceFormat.equals(
+                            bookWithInfo.path.substringAfterLast('.'),
+                            ignoreCase = true
+                        )
+                    }
                     if (availableConverters.isEmpty()) {
                         a("/opds/book/${bookWithInfo.id}/download", classes = "card-footer-item") { +"Download" }
                     } else {
                         // Original format download
-                        a("/opds/book/${bookWithInfo.id}/download", classes = "card-footer-item") { +bookWithInfo.path.substringAfterLast('.') }
+                        a(
+                            "/opds/book/${bookWithInfo.id}/download",
+                            classes = "card-footer-item"
+                        ) { +bookWithInfo.path.substringAfterLast('.') }
                         // Converted format downloads
                         availableConverters.forEach { converter ->
-                            a("/opds/book/${bookWithInfo.id}/download/${converter.targetFormat}", classes = "card-footer-item") { +converter.targetFormat }
+                            a(
+                                "/opds/book/${bookWithInfo.id}/download/${converter.targetFormat}",
+                                classes = "card-footer-item"
+                            ) { +converter.targetFormat }
                         }
                     }
                 }
@@ -332,4 +346,86 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
         attributes["hx-push-url"] = "true"
     }
 
+    suspend fun downloadBook(req: ServerRequest): ServerResponse {
+        val bookId = req.pathVariable("id")
+        val targetFormat = req.pathVariableOrNull("format")
+
+        // Get the book from the repository
+        val book = service.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+
+        // Determine the original extension
+        val originalExtension = book.path.substringAfterLast('.')
+
+        if (targetFormat != null) {
+            // Handle format conversion
+            val convertedStream = service.convertBook(book.path, targetFormat)
+                ?: return ServerResponse.badRequest().bodyValueAndAwait("Conversion to $targetFormat not supported")
+
+            val fileName = generateFileName(book, targetFormat)
+            val contentType = getContentTypeForExtension(targetFormat)
+
+            val headers = HttpHeaders().apply {
+                contentDisposition = ContentDisposition.builder("attachment")
+                    .filename(fileName)
+                    .build()
+            }
+            convertedStream.use {
+                return ServerResponse.ok()
+                    .headers { it.addAll(headers) }
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .bodyValueAndAwait(InputStreamResource(it))
+            }
+
+        }
+        // Handle direct download
+        val fileName = generateFileName(book, originalExtension)
+        val contentType = getContentTypeForExtension(originalExtension)
+
+        val headers = HttpHeaders().apply {
+            contentDisposition = ContentDisposition.builder("attachment")
+                .filename(fileName)
+                .build()
+        }
+
+        return ServerResponse.ok()
+            .headers { it.addAll(headers) }
+            .contentType(MediaType.parseMediaType(contentType))
+            .bodyValueAndAwait(InputStreamResource(service.getBookData(book.path)))
+    }
+
+    /**
+     * Generates a file name from the book's metadata.
+     * The format is: "BookName [SequenceName #SequenceNumber].extension"
+     * If sequence name or number is not available, they are omitted.
+     */
+    private fun generateFileName(book: Book, extension: String): String {
+        val baseFileName = buildString {
+            append(book.name.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
+
+            if (book.sequence != null) {
+                append(" [")
+                append(book.sequence.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
+
+                if (book.sequenceNumber != null) {
+                    append(" #")
+                    append(book.sequenceNumber)
+                }
+
+                append("]")
+            }
+        }
+
+        return "$baseFileName.$extension"
+    }
+
+    private fun getContentTypeForExtension(extension: String): String {
+        return when (extension.lowercase()) {
+            "epub" -> "application/epub+zip"
+            "fb2" -> "application/x-fictionbook+xml"
+            "pdf" -> "application/pdf"
+            "mobi" -> "application/x-mobipocket-ebook"
+            "txt" -> "text/plain"
+            else -> "application/octet-stream"
+        }
+    }
 }

@@ -47,6 +47,8 @@ class RoutingConfig {
             GET("/search", htmxHandler::search)
             GET("/new/{page}", htmxHandler::new)
         }
+        GET("/opds/book/{id}/download", htmxHandler::downloadBook)
+        GET("/opds/book/{id}/download/{format}", htmxHandler::downloadBook)
         POST("/scan", scanner::scan)
     }
 }
