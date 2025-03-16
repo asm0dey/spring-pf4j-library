@@ -17,6 +17,40 @@ interface DelegatingBookHandler : ExtensionPoint {
     fun obtainBook(path: String, handlers: Collection<BookHandler>): Book
 }
 
+/**
+ * Extension point for format converters.
+ * Implementations of this interface can convert files from one format to another.
+ */
+interface FormatConverter : ExtensionPoint {
+    /**
+     * The source format that this converter can handle.
+     */
+    val sourceFormat: String
+
+    /**
+     * The target format that this converter can produce.
+     */
+    val targetFormat: String
+
+    /**
+     * Checks if this converter can convert the given file.
+     *
+     * @param file The file to check.
+     * @return True if this converter can convert the file, false otherwise.
+     */
+    fun canConvert(file: File): Boolean
+
+    /**
+     * Converts the given file to the target format.
+     *
+     * @param sourceFile The file to convert.
+     * @param targetFile The file to write the converted content to. If null, a new file will be created
+     *                   with the same name as the source file but with the target format extension.
+     * @return The converted file.
+     */
+    fun convert(sourceFile: File, targetFile: File? = null): File
+}
+
 data class DelegatingBook(
     val book: Book,
 ) : Book {

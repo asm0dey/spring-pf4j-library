@@ -1,5 +1,6 @@
 package com.github.asm0dey.opdsko_spring
 
+import com.github.asm0dey.opdsko.common.FormatConverter
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 import org.springframework.http.MediaType
@@ -11,8 +12,7 @@ import kotlin.math.abs
 import kotlin.math.min
 
 @Component
-class HtmxHandler(val repo: BookRepo, val service: BookService) {
-    private val epubConverterAccessible: Boolean = false
+class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConverters: List<FormatConverter>) {
 
     suspend fun homePage(req: ServerRequest): ServerResponse {
         val x = createHTML(false).div("grid") {
@@ -218,11 +218,17 @@ class HtmxHandler(val repo: BookRepo, val service: BookService) {
                         attributes["_"] = "on htmx:afterOnLoad wait 10ms then add .is-active to #modal"
                         +"Info"
                     }
-                    if (!epubConverterAccessible)
+                    // Check if there are any format converters available for this book
+                    val availableConverters = formatConverters.filter { it.sourceFormat.equals(bookWithInfo.path.substringAfterLast('.'), ignoreCase = true) }
+                    if (availableConverters.isEmpty()) {
                         a("/opds/book/${bookWithInfo.id}/download", classes = "card-footer-item") { +"Download" }
-                    else {
-                        a("/opds/book/${bookWithInfo.id}/download", classes = "card-footer-item") { +"fb2" }
-                        a("/opds/book/${bookWithInfo.id}/download/epub", classes = "card-footer-item") { +"epub" }
+                    } else {
+                        // Original format download
+                        a("/opds/book/${bookWithInfo.id}/download", classes = "card-footer-item") { +bookWithInfo.path.substringAfterLast('.') }
+                        // Converted format downloads
+                        availableConverters.forEach { converter ->
+                            a("/opds/book/${bookWithInfo.id}/download/${converter.targetFormat}", classes = "card-footer-item") { +converter.targetFormat }
+                        }
                     }
                 }
             }

@@ -15,7 +15,7 @@ class Fb2BookHandler : BookHandler {
         Fb2Book(FictionBook(fileName, dataProvider), fileName)
 
     override val readFormats: List<String>
-        get() = listOf("fb2") + if (Fb2Plugin.epubConverterAccessible) listOf("epub") else listOf()
+        get() = listOf("fb2")
 }
 
 private data class Fb2Book(
