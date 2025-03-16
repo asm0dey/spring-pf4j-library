@@ -11,14 +11,19 @@ import org.w3c.dom.Node
 class Section : IdElement {
     @ProtoNumber(7)
     var image: Image? = null
+
     @ProtoNumber(2)
     var annotation: Annotation? = null
+
     @ProtoNumber(3)
     protected var epigraphs: ArrayList<Epigraph> = arrayListOf()
+
     @ProtoNumber(4)
     protected var sections: ArrayList<Section> = arrayListOf()
+
     @ProtoNumber(5)
     protected var elements: ArrayList<Element> = arrayListOf()
+
     @ProtoNumber(6)
     protected var title: Title? = null
 
@@ -37,7 +42,8 @@ class Section : IdElement {
                 "subtitle" -> elements.add(Subtitle(node))
                 "p" -> elements.add(P(node))
                 "empty-line" -> elements.add(EmptyLine())
-                "cite" -> elements.add(Cite(node)) }
+                "cite" -> elements.add(Cite(node))
+            }
         }
     }
 

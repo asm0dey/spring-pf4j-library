@@ -3,7 +3,6 @@ package com.github.asm0dey.opdsko_spring
 import com.meilisearch.sdk.Client
 import com.meilisearch.sdk.SearchRequest
 import com.meilisearch.sdk.json.GsonJsonHandler
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
 import org.springframework.context.annotation.Lazy

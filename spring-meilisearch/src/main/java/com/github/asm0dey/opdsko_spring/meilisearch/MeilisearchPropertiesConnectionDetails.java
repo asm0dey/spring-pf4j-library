@@ -13,8 +13,8 @@ public class MeilisearchPropertiesConnectionDetails implements MeilisearchConnec
     public InetSocketAddress address() {
         if (properties.host().isBlank()) throw new IllegalStateException("Meilisearch host is blank");
         return new InetSocketAddress(
-            properties.host(),
-            properties.port()
+                properties.host(),
+                properties.port()
         );
     }
 

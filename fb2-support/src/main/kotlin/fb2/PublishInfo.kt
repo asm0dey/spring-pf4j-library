@@ -10,18 +10,23 @@ class PublishInfo {
     @ProtoNumber(1)
     var bookName: String? = null
         protected set
+
     @ProtoNumber(2)
     var city: String? = null
         protected set
+
     @ProtoNumber(3)
     var year: String? = null
         protected set
+
     @ProtoNumber(4)
     var publisher: String? = null
         protected set
+
     @ProtoNumber(5)
     var isbn: String? = null
         protected set
+
     @ProtoNumber(6)
     var sequence: Sequence? = null
         protected set

@@ -10,6 +10,7 @@ class Xmlns {
     @ProtoNumber(1)
     var name: String? = null
         protected set
+
     @ProtoNumber(2)
     var value: String? = null
         protected set

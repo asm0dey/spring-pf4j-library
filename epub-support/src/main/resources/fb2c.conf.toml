@@ -14,7 +14,7 @@ add_to_toc = true
 
 [document.notes]
 mode = "float-new"
-body_names = [ "notes", "comments" ]
+body_names = ["notes", "comments"]
 renumber = true
 link_format = "[{#body_number.}#number]"
 

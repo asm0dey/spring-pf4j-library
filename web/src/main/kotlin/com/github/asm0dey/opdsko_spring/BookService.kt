@@ -15,7 +15,7 @@ import com.github.asm0dey.opdsko.common.Book as CommonBook
 @Service
 @DependsOn("springPluginManager")
 class BookService(
-    val bookHandlers: List<BookHandler>, 
+    val bookHandlers: List<BookHandler>,
     val delegates: List<DelegatingBookHandler>,
     val bookMongoRepository: BookMongoRepository,
     val formatConverters: List<FormatConverter>
@@ -112,9 +112,9 @@ class BookService(
         val sourceFormat = path.substringAfterLast('.')
 
         // Find a suitable converter
-        val converter = formatConverters.firstOrNull { 
-            it.sourceFormat.equals(sourceFormat, ignoreCase = true) && 
-            it.targetFormat.equals(targetFormat, ignoreCase = true) 
+        val converter = formatConverters.firstOrNull {
+            it.sourceFormat.equals(sourceFormat, ignoreCase = true) &&
+                    it.targetFormat.equals(targetFormat, ignoreCase = true)
         } ?: return null
 
         // Check if the converter can handle this format

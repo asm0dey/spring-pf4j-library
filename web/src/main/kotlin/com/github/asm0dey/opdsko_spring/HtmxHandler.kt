@@ -1,16 +1,21 @@
 package com.github.asm0dey.opdsko_spring
 
 import com.github.asm0dey.opdsko.common.FormatConverter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withContext
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 import org.springframework.core.io.InputStreamResource
+import org.springframework.data.domain.Sort
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.*
 import java.net.URI
-import java.util.*
+import java.net.URLDecoder
+import java.net.URLEncoder
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
 import kotlin.math.min
@@ -20,9 +25,9 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
 
     suspend fun homePage(req: ServerRequest): ServerResponse {
         val x = createHTML(false).div("grid") {
-            NavTile("New books", "Recent publications from this catalog", "/api/new")
+            NavTile("New books", "Recent publications from this catalog", "/api/new/1")
             NavTile("Books by series", "Authors by first letters", "/api/series/browse")
-            NavTile("Books by author", "Series by first letters", "/api/author/c")
+            NavTile("Books by author", "Authors by first letters", "/api/author")
             NavTile("Genres", "Books by genres", "/api/genre")
         }
         return ok(smartHtml(req, x, BreadCrumbs("Library" to "/api")))
@@ -34,9 +39,9 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
         val searchBookByText = repo.searchBookByText(searchTerm, page)
         println(searchBookByText)
         val x = createHTML(false).div("grid") {
-            NavTile("New books", "Recent publications from this catalog", "/api/new")
+            NavTile("New books", "Recent publications from this catalog", "/api/new/1")
             NavTile("Books by series", "Authors by first letters", "/api/series/browse")
-            NavTile("Books by author", "Series by first letters", "/api/author/c")
+            NavTile("Books by author", "Authors by first letters", "/api/author")
             NavTile("Genres", "Books by genres", "/api/genre")
         }
         return ok(smartHtml(req, x, BreadCrumbs("Library" to "/api")))
@@ -80,7 +85,7 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
                 meta(charset = "utf-8")
                 meta(name = "viewport", content = "width=device-width, initial-scale=1")
                 title("Asm0dey's library")
-                link(rel = "stylesheet", href = "/webjars/bulma/1.0.2/css/bulma.min.css")
+                link(rel = "stylesheet", href = "/webjars/bulma/1.0.3/css/bulma.min.css")
                 link(rel = "stylesheet", href = "/webjars/font-awesome/4.7.0/css/font-awesome.min.css")
 
                 link(href = "/apple-touch-icon.png", rel = "apple-touch-icon") {
@@ -162,8 +167,8 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
                 div {
                     id = "modal-cont"
                 }
-                script(src = "/webjars/htmx.org/2.0.3/dist/htmx.min.js") {}
-                script(src = "/webjars/hyperscript.org/0.9.12/dist/_hyperscript.min.js") {}
+                script(src = "/webjars/htmx.org/2.0.4/dist/htmx.min.js") {}
+                script(src = "/webjars/hyperscript.org/0.9.13/dist/_hyperscript.min.js") {}
             }
 
         }
@@ -345,6 +350,301 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
         attributes["hx-swap"] = "innerHTML show:.input:top"
         attributes["hx-target"] = "#layout"
         attributes["hx-push-url"] = "true"
+    }
+
+    /**
+     * Handler for author navigation - first level (first letters)
+     */
+    suspend fun authorFirstLevel(req: ServerRequest): ServerResponse {
+        val letters = repo.bookMongoRepository.findAuthorFirstLetters().toList()
+        val x = createHTML(false).div("grid") {
+            for (letter in letters) {
+                val title = if (letter.count > 1) letter.id else letter.id
+                NavTile(title, "Authors starting with ${letter.id}  (${letter.count})", "/api/author/${letter.id}")
+            }
+        }
+        val breadcrumbs = BreadCrumbs(
+            listOf(
+                "Library" to "/api",
+                "Authors" to "/api/author"
+            )
+        )
+        return ok(smartHtml(req, x, breadcrumbs))
+    }
+
+    /**
+     * Handler for author navigation - prefix level (first N letters)
+     */
+    suspend fun authorPrefixLevel(req: ServerRequest): ServerResponse {
+        val prefix = req.pathVariable("prefix")
+        val depth = prefix.length
+
+        // If depth is 5 or more, show full author names
+        if (depth >= 5) {
+            return authorFullNames(req)
+        }
+
+        // Check if the prefix matches any complete last names
+        val exactLastNameCount = repo.bookMongoRepository.countExactLastNames(prefix).toList()
+        if (exactLastNameCount.isNotEmpty() && exactLastNameCount[0].count > 0) {
+            return authorFullNames(req)
+        }
+
+        val nextDepth = depth + 1
+        val prefixes = repo.bookMongoRepository.findAuthorPrefixes(prefix, nextDepth).toList()
+
+        val x = createHTML(false).div("grid") {
+            for (prefixResult in prefixes) {
+                val title =
+                    if (prefixResult.count > 1) "${prefixResult.id} (${prefixResult.count})" else prefixResult.id
+                NavTile(
+                    title,
+                    "Authors starting with ${prefixResult.id}",
+                    "/api/author/${prefixResult.id}"
+                )
+            }
+        }
+
+        val breadcrumbs = buildAuthorBreadcrumbs(prefix)
+        return ok(smartHtml(req, x, breadcrumbs))
+    }
+
+    /**
+     * Handler for author navigation - full author names
+     */
+    suspend fun authorFullNames(req: ServerRequest): ServerResponse {
+        val prefix = req.pathVariable("prefix")
+        val authors = repo.bookMongoRepository.findAuthorsByPrefix(prefix).toList()
+
+        val x = createHTML(false).div("grid") {
+            for (author in authors) {
+                val fullName = "${author.id.lastName}, ${author.id.firstName}"
+                val encodedLastName = URLEncoder.encode(author.id.lastName, "UTF-8")
+                val encodedFirstName = URLEncoder.encode(author.id.firstName, "UTF-8")
+                NavTile(
+                    fullName,
+                    "View books by this author",
+                    "/api/author/view/$encodedLastName/$encodedFirstName"
+                )
+            }
+        }
+
+        val breadcrumbs = buildAuthorBreadcrumbs(prefix)
+        return ok(smartHtml(req, x, breadcrumbs))
+    }
+
+    /**
+     * Handler for author view - shows navigation options for an author
+     */
+    suspend fun authorView(req: ServerRequest): ServerResponse {
+        val lastName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("lastName"), "UTF-8")
+        }
+        val firstName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("firstName"), "UTF-8")
+        }
+        val fullName = "$lastName, $firstName"
+
+        val x = createHTML(false).div("grid") {
+            NavTile(
+                "By Series",
+                "View series by this author",
+                "/api/author/view/$lastName/$firstName/series"
+            )
+            NavTile(
+                "Without Series",
+                "View books without series",
+                "/api/author/view/$lastName/$firstName/noseries"
+            )
+            NavTile(
+                "All Books",
+                "View all books by this author",
+                "/api/author/view/$lastName/$firstName/all"
+            )
+        }
+
+        val breadcrumbs = BreadCrumbs(
+            listOf(
+                "Library" to "/api",
+                "Authors" to "/api/author",
+                fullName to "/api/author/view/$lastName/$firstName"
+            )
+        )
+
+        return ok(smartHtml(req, x, breadcrumbs))
+    }
+
+    /**
+     * Handler for author's series
+     */
+    suspend fun authorSeries(req: ServerRequest): ServerResponse {
+        val lastName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("lastName"), "UTF-8")
+        }
+        val firstName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("firstName"), "UTF-8")
+        }
+        val fullName = "$lastName, $firstName"
+
+        val series = repo.bookMongoRepository.findSeriesByAuthor(lastName, firstName).toList()
+
+        val x = createHTML(false).div("grid") {
+            for (seriesResult in series) {
+                val encodedSeries = URLEncoder.encode(seriesResult.id, "UTF-8")
+                NavTile(
+                    seriesResult.id,
+                    "View books in this series",
+                    "/api/author/view/$lastName/$firstName/series/$encodedSeries"
+                )
+            }
+        }
+
+        val breadcrumbs = BreadCrumbs(
+            listOf(
+                "Library" to "/api",
+                "Authors" to "/api/author",
+                fullName to "/api/author/view/$lastName/$firstName",
+                "Series" to "/api/author/view/$lastName/$firstName/series"
+            )
+        )
+
+        return ok(smartHtml(req, x, breadcrumbs))
+    }
+
+    /**
+     * Handler for books in a series by an author
+     */
+    suspend fun authorSeriesBooks(req: ServerRequest): ServerResponse {
+        val lastName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("lastName"), "UTF-8")
+        }
+        val firstName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("firstName"), "UTF-8")
+        }
+        val seriesName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("series"), "UTF-8")
+        }
+        val fullName = "$lastName, $firstName"
+
+        val sort = Sort.by(Sort.Direction.ASC, "sequenceNumber")
+        val books = repo.bookMongoRepository.findBooksBySeries(seriesName, sort).toList()
+
+        val imageTypes = service.imageTypes(books)
+        val shortDescriptions = service.shortDescriptions(books)
+
+        val x = createHTML(false).div("grid") {
+            for (book in books) {
+                BookTile(book, imageTypes, shortDescriptions)
+            }
+        }
+
+        val breadcrumbs = BreadCrumbs(
+            listOf(
+                "Library" to "/api",
+                "Authors" to "/api/author",
+                fullName to "/api/author/view/$lastName/$firstName",
+                "Series" to "/api/author/view/$lastName/$firstName/series",
+                seriesName to "/api/author/view/$lastName/$firstName/series/${
+                    withContext(Dispatchers.IO) {
+                        URLEncoder.encode(
+                            seriesName,
+                            "UTF-8"
+                        )
+                    }
+                }"
+            )
+        )
+
+        return ok(smartHtml(req, x, breadcrumbs))
+    }
+
+    /**
+     * Handler for books without series by an author
+     */
+    suspend fun authorNoSeriesBooks(req: ServerRequest): ServerResponse {
+        val lastName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("lastName"), "UTF-8")
+        }
+        val firstName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("firstName"), "UTF-8")
+        }
+        val fullName = "$lastName, $firstName"
+
+        val sort = Sort.by(Sort.Direction.ASC, "name")
+        val books = repo.bookMongoRepository.findBooksByAuthorWithoutSeries(lastName, firstName, sort).toList()
+
+        val imageTypes = service.imageTypes(books)
+        val shortDescriptions = service.shortDescriptions(books)
+
+        val x = createHTML(false).div("grid") {
+            for (book in books) {
+                BookTile(book, imageTypes, shortDescriptions)
+            }
+        }
+
+        val breadcrumbs = BreadCrumbs(
+            listOf(
+                "Library" to "/api",
+                "Authors" to "/api/author",
+                fullName to "/api/author/view/$lastName/$firstName",
+                "Without Series" to "/api/author/view/$lastName/$firstName/noseries"
+            )
+        )
+
+        return ok(smartHtml(req, x, breadcrumbs))
+    }
+
+    /**
+     * Handler for all books by an author
+     */
+    suspend fun authorAllBooks(req: ServerRequest): ServerResponse {
+        val lastName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("lastName"), "UTF-8")
+        }
+        val firstName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("firstName"), "UTF-8")
+        }
+        val fullName = "$lastName, $firstName"
+
+        val sort = Sort.by(Sort.Direction.ASC, "name")
+        val books = repo.bookMongoRepository.findBooksByAuthor(lastName, firstName, sort).toList()
+
+        val imageTypes = service.imageTypes(books)
+        val shortDescriptions = service.shortDescriptions(books)
+
+        val x = createHTML(false).div("grid") {
+            for (book in books) {
+                BookTile(book, imageTypes, shortDescriptions)
+            }
+        }
+
+        val breadcrumbs = BreadCrumbs(
+            listOf(
+                "Library" to "/api",
+                "Authors" to "/api/author",
+                fullName to "/api/author/view/$lastName/$firstName",
+                "All Books" to "/api/author/view/$lastName/$firstName/all"
+            )
+        )
+
+        return ok(smartHtml(req, x, breadcrumbs))
+    }
+
+    /**
+     * Helper function to build breadcrumbs for author navigation
+     */
+    private fun buildAuthorBreadcrumbs(prefix: String): String {
+        val breadcrumbItems = mutableListOf<Pair<String, String>>()
+        breadcrumbItems.add("Library" to "/api")
+        breadcrumbItems.add("Authors" to "/api/author")
+
+        // Add breadcrumbs for each level of the prefix
+        for (i in 1..prefix.length) {
+            val currentPrefix = prefix.substring(0, i)
+            breadcrumbItems.add(currentPrefix to "/api/author/$currentPrefix")
+        }
+
+        return BreadCrumbs(breadcrumbItems)
     }
 
     suspend fun downloadBook(req: ServerRequest): ServerResponse {

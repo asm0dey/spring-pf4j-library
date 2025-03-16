@@ -1,7 +1,7 @@
 package com.github.asm0dey.opdsko_spring
 
 import jakarta.annotation.PostConstruct
-import org.pf4j.*
+import org.pf4j.DefaultPluginManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

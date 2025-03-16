@@ -34,7 +34,12 @@ logging:
     org.springframework: info
     reactor: info
     sun: info
-
+    org:
+      springframework:
+        data:
+          mongodb:
+            core:
+              MongoTemplate: debug
 scanner:
   sources:
     - /home/finkel/Books/
@@ -46,4 +51,3 @@ meilisearch:
 
 pf4j:
   plugin-dir: plugins
-

@@ -10,6 +10,7 @@ class Date {
     @ProtoNumber(1)
     var value: String? = null
         protected set
+
     @ProtoNumber(2)
     var date: String? = null
         protected set
