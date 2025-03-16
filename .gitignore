@@ -39,3 +39,4 @@ out/
 ### Kotlin ###
 .kotlin
 .env*
+fb2c*

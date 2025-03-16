@@ -1,6 +1,7 @@
 package com.github.asm0dey.opdsko.converter.fb2toepub
 
 import org.pf4j.Plugin
+import org.pf4j.PluginWrapper
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URI
@@ -12,7 +13,7 @@ import kotlin.io.path.setPosixFilePermissions
 
 private const val FB2C_VERSION = "v1.77.1"
 
-class Fb2ToEpubConverterPlugin : Plugin() {
+class Fb2ToEpubConverterPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     companion object {
         var epubConverterAccessible = false
         private val os by lazy {

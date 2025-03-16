@@ -7,6 +7,11 @@ spring:
         in-tests: false
   application:
     name: opdsko-spring
+
+  data:
+    mongodb:
+      authentication-database: admin
+      auto-index-creation: true
 #  datasource:
 #    url: jdbc:postgresql://localhost:5432/opdsko
 #    username: postgres
@@ -41,3 +46,4 @@ meilisearch:
 
 pf4j:
   plugin-dir: plugins
+

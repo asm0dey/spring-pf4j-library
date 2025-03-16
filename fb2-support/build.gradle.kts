@@ -50,7 +50,6 @@ tasks.named<ShadowJar>("shadowJar") {
             "Plugin-Id" to "fb2-support",
             "Plugin-Version" to version,
             "Plugin-Provider" to "asm0dey",
-            "Plugin-Class" to "com.github.asm0dey.opdsko.fb2.Fb2Plugin",
         )
     }
 }
