@@ -22,11 +22,16 @@ kotlinx-html = "0.12.0"
 tinylog = "2.7.0"
 pf4j = "3.13.0"
 spring-boot = "3.4.3"
+mongock = "5.5.1"
 
 [libraries]
 
 assertj-core = { module = "org.assertj:assertj-core", version = "3.27.3" }
 ##                                                         ⬆ = "4.0.0-M1" }
+mongock-bom = { module = "io.mongock:mongock-bom", version.ref = "mongock" }
+mongock-springboot = { module = "io.mongock:mongock-springboot" }
+mongock-mongodb-springdata-v4-driver = { module = "io.mongock:mongodb-springdata-v3-driver" }
+mongock-mongodb-reactive-driver = { module = "io.mongock:mongodb-reactive-driver" }
 bulma = "org.webjars.npm:bulma:1.0.3"
 commons-codec = "commons-codec:commons-codec:1.18.0"
 epub4j = "io.documentnode:epub4j-core:4.2.2"
@@ -61,3 +66,7 @@ spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-s
 spring-boot-test = { module = "org.springframework.boot:spring-boot-test", version.ref = "spring-boot" }
 zip4j = "net.lingala.zip4j:zip4j:2.11.5"
 seaweedfs = "com.seaweedfs:seaweedfs-client:3.80"
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+testcontainers-jupiter = "org.testcontainers:junit-jupiter:1.20.6"
+testcontainers-postgres = "org.testcontainers:postgresql:1.20.6"
+testcontainers-mongo = "org.testcontainers:mongodb:1.20.6"

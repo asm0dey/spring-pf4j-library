@@ -4,7 +4,7 @@ spring:
       enabled: true
       lifecycle-management: start_and_stop
       skip:
-        in-tests: false
+        in-tests: true
   application:
     name: opdsko-spring
 
@@ -12,6 +12,12 @@ spring:
     mongodb:
       authentication-database: admin
       auto-index-creation: true
+#mongock:
+#  migration-scan-package: com.github.asm0dey.opdsko_spring.migrations
+#  runner-type: ApplicationRunner
+#  track-ignored: false
+#  test-enabled: false
+
 #  datasource:
 #    url: jdbc:postgresql://localhost:5432/opdsko
 #    username: postgres
@@ -51,3 +57,8 @@ meilisearch:
 
 pf4j:
   plugin-dir: plugins
+seaweedfs:
+  filer-grpc-port: 18888
+  filer-port: 8888
+  host: localhost
+  port: 9333

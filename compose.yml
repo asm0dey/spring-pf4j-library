@@ -23,7 +23,6 @@ services:
 
   meilisearch:
     image: getmeili/meilisearch:latest
-    container_name: meilisearch
     environment:
       MEILI_MASTER_KEY: random_master_key_12345
     ports:
@@ -33,8 +32,9 @@ services:
     image: chrislusf/seaweedfs
     restart: on-failure
     ports:
-      - "19333:19333"  # master port
+      - "9333:9333"  # master port
       - "8888:8888"  # filer port
       - "18888:18888"  # filer grpc port
     command: "server -master -volume -filer -s3 -ip.bind=0.0.0.0"
-
+    volumes:
+      - ./seaweedfs-data:/data

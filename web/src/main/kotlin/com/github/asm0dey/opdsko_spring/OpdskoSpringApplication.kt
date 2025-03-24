@@ -1,12 +1,15 @@
 package com.github.asm0dey.opdsko_spring
 
+import com.mongodb.reactivestreams.client.MongoClient
+import io.mongock.driver.mongodb.reactive.driver.MongoReactiveDriver
+import io.mongock.runner.springboot.MongockSpringboot
+import io.mongock.runner.springboot.base.MongockApplicationRunner
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.forEach
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.runApplication
+import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.io.ClassPathResource
@@ -29,6 +32,7 @@ import kotlin.LazyThreadSafetyMode.PUBLICATION
 
 
 @SpringBootApplication
+//@EnableMongock
 //@ImportRuntimeHints(MyRuntimeHintsRegistrar::class)
 class OpdskoSpringApplication
 
@@ -41,6 +45,28 @@ fun main(args: Array<String>) {
 @Configuration
 @ConfigurationProperties(prefix = "scanner")
 data class ScannerSettings(var sources: Array<File> = arrayOf())
+
+@Configuration
+class MongockConfig() {
+
+    @Bean
+    fun mongockApplicationRunner(
+        springContext: ApplicationContext,
+        mongoTemplate: MongoClient
+    ): MongockApplicationRunner {
+        val driver = MongoReactiveDriver.withDefaultLock(mongoTemplate, "mongock-lock")
+        driver.enableTransaction()
+
+        return MongockSpringboot.builder()
+            .setDriver(driver)
+            .addMigrationScanPackage("com.github.asm0dey.opdsko_spring.migrations")
+            .setEventPublisher(springContext)
+            .setSpringContext(springContext)
+            .setTransactional(false)
+            .setTrackIgnored(false)
+            .buildApplicationRunner()
+    }
+}
 
 @Configuration
 class RoutingConfig {
@@ -66,6 +92,9 @@ class RoutingConfig {
         GET("/opds/book/{id}/download", htmxHandler::downloadBook)
         GET("/opds/book/{id}/download/{format}", htmxHandler::downloadBook)
         GET("/opds/image/{id}", htmxHandler::getBookCover)
+        GET("/opds/fullimage/{id}", htmxHandler::getFullBookCover)
+        GET("/api/book/{id}/image", htmxHandler::getFullBookCover)
+        GET("/api/book/{id}/info", htmxHandler::getBookInfo)
         POST("/scan", scanner::scan)
         POST("/cleanup", scanner::cleanup)
     }
@@ -106,7 +135,8 @@ class Scanner(
                         sequenceNumber = commonBook.sequenceNumber,
                         name = commonBook.title,
                         size = File(commonBook.path).length(),
-                        path = commonBook.path
+                        path = commonBook.path,
+                        hasCover = commonBook.cover != null
                     )
                 }
                 .toList()
@@ -211,7 +241,9 @@ data class Book(
     val name: String,
     val added: LocalDateTime = LocalDateTime.now(),
     val size: Long,
-    @Indexed(unique = true) val path: String
+    @Indexed(unique = true) val path: String,
+    val hasCover: Boolean = true
 )
 
 data class Author(val lastName: String, val firstName: String)
+
