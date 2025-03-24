@@ -8,8 +8,6 @@ services:
       - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=postgres
-    # volumes:
-    #   - ./data:/var/lib/postgresql/data
 
   ferretdb:
     image: ghcr.io/ferretdb/ferretdb:2
@@ -22,6 +20,7 @@ services:
       - MONGODB_ROOT_PASSWORD=password
     labels:
       org.springframework.boot.service-connection: mongo
+
   meilisearch:
     image: getmeili/meilisearch:latest
     container_name: meilisearch
@@ -29,8 +28,13 @@ services:
       MEILI_MASTER_KEY: random_master_key_12345
     ports:
       - "7700:7700"
-#    volumes:
-#      - postgres_data:/var/lib/postgresql/data
 
-#volumes:
-#  postgres_data:
+  seaweedfs:
+    image: chrislusf/seaweedfs
+    restart: on-failure
+    ports:
+      - "19333:19333"  # master port
+      - "8888:8888"  # filer port
+      - "18888:18888"  # filer grpc port
+    command: "server -master -volume -filer -s3 -ip.bind=0.0.0.0"
+

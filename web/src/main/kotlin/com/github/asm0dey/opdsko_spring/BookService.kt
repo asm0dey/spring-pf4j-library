@@ -125,4 +125,38 @@ class BookService(
         // Get the book data as a stream and convert it
         return getBookData(path).use { converter.convert(it) }
     }
+
+    /**
+     * Checks if a book exists at the given path using book handlers.
+     *
+     * @param path The path to check
+     * @return true if a book exists at the path, false otherwise
+     */
+    fun bookExists(path: String): Boolean {
+        // First check if the file exists
+        val file = File(path)
+        if (!file.exists()) {
+            return false
+        }
+
+        // Then try to obtain the book using handlers
+        return try {
+            // Check if any delegate handler supports this path
+            val delegateSupports = delegates.any { it.supportsPath(path) }
+
+            // If a delegate supports it, try to obtain the book
+            if (delegateSupports) {
+                delegates.firstOrNull { it.supportsPath(path) }
+                    ?.obtainBook(path, bookHandlers) != null
+            } else {
+                // Otherwise, check if any book handler supports this file
+                val dataExtractor = { file.inputStream() }
+                bookHandlers.firstOrNull { it.supportsFile(path, dataExtractor) }
+                    ?.bookInfo(path, dataExtractor) != null
+            }
+        } catch (e: Exception) {
+            // If an exception occurs, the book doesn't exist or is corrupted
+            false
+        }
+    }
 }
