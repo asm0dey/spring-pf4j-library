@@ -1,5 +1,7 @@
 package com.github.asm0dey.opdsko_spring
 
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.forEach
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -63,7 +65,9 @@ class RoutingConfig {
         }
         GET("/opds/book/{id}/download", htmxHandler::downloadBook)
         GET("/opds/book/{id}/download/{format}", htmxHandler::downloadBook)
+        GET("/opds/image/{id}", htmxHandler::getBookCover)
         POST("/scan", scanner::scan)
+        POST("/cleanup", scanner::cleanup)
     }
 }
 
@@ -73,6 +77,8 @@ class Scanner(
     private val bookRepo: BookRepo,
     private val bookService: BookService,
     private val meilisearch: Meilisearch,
+    private val seaweedFSService: SeaweedFSService,
+    private val bookMongoRepository: BookMongoRepository,
 ) {
     suspend fun scan(request: ServerRequest): ServerResponse {
         for (file in settings.sources) {
@@ -107,13 +113,49 @@ class Scanner(
 
             if (processedBooks.isNotEmpty()) {
                 // Save complete book information to MongoDB and get the saved books with MongoDB-generated IDs
-                val savedBooks = bookRepo.save(processedBooks)
+                val savedBooksFlow = bookRepo.save(processedBooks)
+                val savedBooks = savedBooksFlow.toList()
 
                 // Save book names and IDs to Meilisearch using the MongoDB-generated IDs
-                val bookIndexItems = savedBooks.map { BookIndexItem(it.path, it.name) }.toList()
+                val bookIndexItems = savedBooks.map { BookIndexItem(it.path, it.name) }
                 meilisearch.saveBooks(bookIndexItems)
+
+                // Book covers will be retrieved and cached on demand, not during scan
             }
         }
+        return ServerResponse.ok().buildAndAwait()
+    }
+
+    /**
+     * Cleans up books that are no longer available in the sources.
+     * For each source, scans it and removes books if they are not available anymore.
+     * Uses book handlers and delegate book handlers to determine if books still exist.
+     * 
+     * @param request The server request
+     * @return The server response
+     */
+    suspend fun cleanup(request: ServerRequest): ServerResponse {
+        // Get all books from the database
+        val allBooks = bookMongoRepository.findAll()
+
+        val booksToRemove = allBooks
+            .filter { !bookService.bookExists(it.path) }
+            .toList()
+
+        // Remove books that no longer exist
+        if (booksToRemove.isNotEmpty()) {
+            // Delete from MongoDB
+            bookMongoRepository.deleteAll(booksToRemove)
+
+            // Delete from Meilisearch
+            meilisearch.deleteBooks(booksToRemove.map { it.id })
+
+            // Delete book covers from SeaweedFS
+            for (book in booksToRemove) {
+                seaweedFSService.deleteBookCover(book.id)
+            }
+        }
+
         return ServerResponse.ok().buildAndAwait()
     }
 }

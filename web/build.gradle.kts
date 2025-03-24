@@ -34,6 +34,8 @@ dependencies {
 //    api(project(":fb2-support", configuration = "shadow"))
 //    api(project(":fb2-support"))
     implementation(project(":spring-meilisearch"))
+    implementation(project(":seaweedfs-spring"))
+    implementation(libs.seaweedfs)
     implementation(libs.commons.codec)
     implementation(libs.flyway.core)
     implementation(libs.flyway.database.postgresql)

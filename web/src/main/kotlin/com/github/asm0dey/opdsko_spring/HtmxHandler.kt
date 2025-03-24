@@ -21,7 +21,12 @@ import kotlin.math.abs
 import kotlin.math.min
 
 @Component
-class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConverters: List<FormatConverter>) {
+class HtmxHandler(
+    val repo: BookRepo,
+    val bookService: BookService,
+    val formatConverters: List<FormatConverter>,
+    val seaweedFSService: SeaweedFSService
+) {
 
     suspend fun homePage(req: ServerRequest): ServerResponse {
         val x = createHTML(false).div("grid") {
@@ -50,8 +55,8 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
     suspend fun new(req: ServerRequest): ServerResponse {
         val page = req.pathVariableOrNull("page")?.toIntOrNull()?.minus(1) ?: 0
         val books = repo.newBooks(page)
-        val imageTypes = service.imageTypes(books)
-        val shortDescriptions = service.shortDescriptions(books)
+        val imageTypes = bookService.imageTypes(books)
+        val shortDescriptions = bookService.shortDescriptions(books)
         val x = createHTML(false).div("grid") {
             for (book in books) {
                 BookTile(book, imageTypes, shortDescriptions)
@@ -206,7 +211,7 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
                                 attributes["hx-swap"] = "innerHTML show:.input:top"
                                 attributes["hx-target"] = "#modal-cont"
                                 attributes["_"] = "on htmx:afterOnLoad wait 10ms then add .is-active to #modal"
-                                img(src = "/opds/imag       e/${bookWithInfo.id}") {
+                                img(src = "/opds/image/${bookWithInfo.id}") {
                                     attributes["loading"] = "lazy"
                                 }
                             }
@@ -529,8 +534,8 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
         val sort = Sort.by(Sort.Direction.ASC, "sequenceNumber")
         val books = repo.bookMongoRepository.findBooksBySeries(seriesName, sort).toList()
 
-        val imageTypes = service.imageTypes(books)
-        val shortDescriptions = service.shortDescriptions(books)
+        val imageTypes = bookService.imageTypes(books)
+        val shortDescriptions = bookService.shortDescriptions(books)
 
         val x = createHTML(false).div("grid") {
             for (book in books) {
@@ -573,8 +578,8 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
         val sort = Sort.by(Sort.Direction.ASC, "name")
         val books = repo.bookMongoRepository.findBooksByAuthorWithoutSeries(lastName, firstName, sort).toList()
 
-        val imageTypes = service.imageTypes(books)
-        val shortDescriptions = service.shortDescriptions(books)
+        val imageTypes = bookService.imageTypes(books)
+        val shortDescriptions = bookService.shortDescriptions(books)
 
         val x = createHTML(false).div("grid") {
             for (book in books) {
@@ -609,8 +614,8 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
         val sort = Sort.by(Sort.Direction.ASC, "name")
         val books = repo.bookMongoRepository.findBooksByAuthor(lastName, firstName, sort).toList()
 
-        val imageTypes = service.imageTypes(books)
-        val shortDescriptions = service.shortDescriptions(books)
+        val imageTypes = bookService.imageTypes(books)
+        val shortDescriptions = bookService.shortDescriptions(books)
 
         val x = createHTML(false).div("grid") {
             for (book in books) {
@@ -652,14 +657,14 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
         val targetFormat = req.pathVariableOrNull("format")
 
         // Get the book from the repository
-        val book = service.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+        val book = bookService.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
 
         // Determine the original extension
         val originalExtension = book.path.substringAfterLast('.')
 
         if (targetFormat != null) {
             // Handle format conversion
-            val convertedStream = service.convertBook(book.path, targetFormat)
+            val convertedStream = bookService.convertBook(book.path, targetFormat)
                 ?: return ServerResponse.badRequest().bodyValueAndAwait("Conversion to $targetFormat not supported")
 
             val fileName = generateFileName(book, targetFormat)
@@ -691,7 +696,7 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
         return ServerResponse.ok()
             .headers { it.addAll(headers) }
             .contentType(MediaType.parseMediaType(contentType))
-            .bodyValueAndAwait(InputStreamResource(service.getBookData(book.path)))
+            .bodyValueAndAwait(InputStreamResource(bookService.getBookData(book.path)))
     }
 
     /**
@@ -728,5 +733,50 @@ class HtmxHandler(val repo: BookRepo, val service: BookService, val formatConver
             "txt" -> "text/plain"
             else -> "application/octet-stream"
         }
+    }
+
+    /**
+     * Serves a book cover image from SeaweedFS or retrieves it from the book on demand.
+     * If the cover is not in SeaweedFS, it retrieves it from the book and caches it to SeaweedFS.
+     * 
+     * @param req The server request
+     * @return The server response with the image data
+     */
+    suspend fun getBookCover(req: ServerRequest): ServerResponse {
+        val bookId = req.pathVariable("id")
+
+        // Try to get the book cover from SeaweedFS first
+        var coverInputStream = seaweedFSService.getBookCover(bookId)
+        val contentType: String
+
+        if (coverInputStream == null) {
+            // Cover not found in SeaweedFS, retrieve it from the book
+            val book = bookService.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+            val commonBook = bookService.obtainBook(book.path) ?: return ServerResponse.notFound().buildAndAwait()
+
+            // Check if the book has a cover
+            if (commonBook.cover == null || commonBook.coverContentType == null) {
+                return ServerResponse.notFound().buildAndAwait()
+            }
+
+            // Cache the cover to SeaweedFS
+            seaweedFSService.saveBookCover(bookId, commonBook.cover!!, commonBook.coverContentType!!)
+
+            // Get the newly cached cover from SeaweedFS
+            coverInputStream = seaweedFSService.getBookCover(bookId)
+                ?: return ServerResponse.notFound().buildAndAwait()
+
+            contentType = commonBook.coverContentType!!
+        } else {
+            // Get the content type of the cover image from SeaweedFS
+            contentType = seaweedFSService.getBookCoverContentType(bookId)
+        }
+
+        // Create an InputStreamResource with the cover image data
+        val inputStreamResource = InputStreamResource(coverInputStream)
+
+        return ServerResponse.ok()
+            .contentType(MediaType.parseMediaType(contentType))
+            .bodyValueAndAwait(inputStreamResource)
     }
 }
