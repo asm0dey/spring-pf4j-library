@@ -16,8 +16,8 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 @Lazy(false)
 class BookRepo(
-    val meilisearch: Client,
-    val bookMongoRepository: BookMongoRepository,
+    private val meilisearch: Client,
+    private val bookMongoRepository: BookMongoRepository,
 ) {
 
     suspend fun searchBookByText(searchTerm: String, page: Int): List<BookWithInfo> {

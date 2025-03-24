@@ -30,6 +30,7 @@ repositories {
 dependencies {
     api(project(":common"))
     developmentOnly(libs.spring.boot.docker.compose)
+    testRuntimeOnly(libs.spring.boot.docker.compose)
 //    api(project(":epub-support", configuration = "shadow"))
 //    api(project(":fb2-support", configuration = "shadow"))
 //    api(project(":fb2-support"))
@@ -51,6 +52,11 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.meilisearch)
+
+    // Mongock dependencies
+    implementation(platform(libs.mongock.bom))
+    implementation(libs.mongock.springboot)
+    implementation(libs.mongock.mongodb.reactive.driver)
 //    implementation(libs.tinylog)
 //    implementation(libs.tinylog.kotlin)
 //    implementation(libs.tinylog.slf4j)
@@ -70,8 +76,12 @@ dependencies {
     runtimeOnly(libs.hyperscript)
     runtimeOnly(libs.postgresql)
     testImplementation(libs.kotlin.test.junit5)
+    testImplementation(libs.spring.boot.testcontainers)
     testImplementation(libs.spring.boot.starter.test)
     testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation(libs.testcontainers.jupiter)
+    testImplementation(libs.testcontainers.postgres)
+    testImplementation(libs.testcontainers.mongo)
 }
 
 kotlin {

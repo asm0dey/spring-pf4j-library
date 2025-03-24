@@ -22,7 +22,6 @@ import kotlin.math.min
 
 @Component
 class HtmxHandler(
-    val repo: BookRepo,
     val bookService: BookService,
     val formatConverters: List<FormatConverter>,
     val seaweedFSService: SeaweedFSService
@@ -41,7 +40,7 @@ class HtmxHandler(
     suspend fun search(req: ServerRequest): ServerResponse {
         val page = req.queryParamOrNull("page")?.toIntOrNull()?.minus(1) ?: 0
         val searchTerm = req.queryParam("search").getOrNull()!!
-        val searchBookByText = repo.searchBookByText(searchTerm, page)
+        val searchBookByText = bookService.searchBookByText(searchTerm, page)
         println(searchBookByText)
         val x = createHTML(false).div("grid") {
             NavTile("New books", "Recent publications from this catalog", "/api/new/1")
@@ -54,7 +53,7 @@ class HtmxHandler(
 
     suspend fun new(req: ServerRequest): ServerResponse {
         val page = req.pathVariableOrNull("page")?.toIntOrNull()?.minus(1) ?: 0
-        val books = repo.newBooks(page)
+        val books = bookService.newBooks(page)
         val imageTypes = bookService.imageTypes(books)
         val shortDescriptions = bookService.shortDescriptions(books)
         val x = createHTML(false).div("grid") {
@@ -172,6 +171,19 @@ class HtmxHandler(
                 div {
                     id = "modal-cont"
                 }
+                div("modal") {
+                    id = "modal"
+                    div("modal-background") {
+                        attributes["_"] = "on click remove .is-active from #modal"
+                    }
+                    div("modal-content") {
+                        id = "modal-content"
+                    }
+                    button(classes = "modal-close is-large") {
+                        attributes["aria-label"] = "close"
+                        attributes["_"] = "on click remove .is-active from #modal"
+                    }
+                }
                 script(src = "/webjars/htmx.org/2.0.4/dist/htmx.min.js") {}
                 script(src = "/webjars/hyperscript.org/0.9.13/dist/_hyperscript.min.js") {}
             }
@@ -203,16 +215,19 @@ class HtmxHandler(
                         +bookWithInfo.name
                     }
                 }
-                if (images[bookWithInfo.id] != null) {
+                if (images[bookWithInfo.id] != null && bookWithInfo.hasCover) {
                     div("card-image") {
                         figure("image") {
                             a {
                                 attributes["hx-get"] = "/api/book/${bookWithInfo.id}/image"
-                                attributes["hx-swap"] = "innerHTML show:.input:top"
-                                attributes["hx-target"] = "#modal-cont"
+                                attributes["hx-swap"] = "innerHTML"
+                                attributes["hx-target"] = "#modal-content"
                                 attributes["_"] = "on htmx:afterOnLoad wait 10ms then add .is-active to #modal"
+                                // Use the preview image by default
                                 img(src = "/opds/image/${bookWithInfo.id}") {
                                     attributes["loading"] = "lazy"
+                                    attributes["alt"] = "Book cover for ${bookWithInfo.name}"
+                                    attributes["title"] = "Click to view full-size image"
                                 }
                             }
                         }
@@ -228,7 +243,8 @@ class HtmxHandler(
                 footer("card-footer mb-0 pb-0 is-align-items-self-end") {
                     a(classes = "card-footer-item") {
                         attributes["hx-get"] = "/api/book/${bookWithInfo.id}/info"
-                        attributes["hx-target"] = "#modal-cont"
+                        attributes["hx-target"] = "#modal-content"
+                        attributes["hx-swap"] = "innerHTML"
                         attributes["_"] = "on htmx:afterOnLoad wait 10ms then add .is-active to #modal"
                         +"Info"
                     }
@@ -361,7 +377,7 @@ class HtmxHandler(
      * Handler for author navigation - first level (first letters)
      */
     suspend fun authorFirstLevel(req: ServerRequest): ServerResponse {
-        val letters = repo.bookMongoRepository.findAuthorFirstLetters().toList()
+        val letters = bookService.findAuthorFirstLetters().toList()
         val x = createHTML(false).div("grid") {
             for (letter in letters) {
                 val title = if (letter.count > 1) letter.id else letter.id
@@ -390,13 +406,13 @@ class HtmxHandler(
         }
 
         // Check if the prefix matches any complete last names
-        val exactLastNameCount = repo.bookMongoRepository.countExactLastNames(prefix).toList()
+        val exactLastNameCount = bookService.countExactLastNames(prefix).toList()
         if (exactLastNameCount.isNotEmpty() && exactLastNameCount[0].count > 0) {
             return authorFullNames(req)
         }
 
         val nextDepth = depth + 1
-        val prefixes = repo.bookMongoRepository.findAuthorPrefixes(prefix, nextDepth).toList()
+        val prefixes = bookService.findAuthorPrefixes(prefix, nextDepth).toList()
 
         val x = createHTML(false).div("grid") {
             for (prefixResult in prefixes) {
@@ -419,7 +435,7 @@ class HtmxHandler(
      */
     suspend fun authorFullNames(req: ServerRequest): ServerResponse {
         val prefix = req.pathVariable("prefix")
-        val authors = repo.bookMongoRepository.findAuthorsByPrefix(prefix).toList()
+        val authors = bookService.findAuthorsByPrefix(prefix).toList()
 
         val x = createHTML(false).div("grid") {
             for (author in authors) {
@@ -491,7 +507,7 @@ class HtmxHandler(
         }
         val fullName = "$lastName, $firstName"
 
-        val series = repo.bookMongoRepository.findSeriesByAuthor(lastName, firstName).toList()
+        val series = bookService.findSeriesByAuthor(lastName, firstName).toList()
 
         val x = createHTML(false).div("grid") {
             for (seriesResult in series) {
@@ -532,7 +548,7 @@ class HtmxHandler(
         val fullName = "$lastName, $firstName"
 
         val sort = Sort.by(Sort.Direction.ASC, "sequenceNumber")
-        val books = repo.bookMongoRepository.findBooksBySeries(seriesName, sort).toList()
+        val books = bookService.findBooksBySeries(seriesName, sort).toList()
 
         val imageTypes = bookService.imageTypes(books)
         val shortDescriptions = bookService.shortDescriptions(books)
@@ -576,7 +592,7 @@ class HtmxHandler(
         val fullName = "$lastName, $firstName"
 
         val sort = Sort.by(Sort.Direction.ASC, "name")
-        val books = repo.bookMongoRepository.findBooksByAuthorWithoutSeries(lastName, firstName, sort).toList()
+        val books = bookService.findBooksByAuthorWithoutSeries(lastName, firstName, sort).toList()
 
         val imageTypes = bookService.imageTypes(books)
         val shortDescriptions = bookService.shortDescriptions(books)
@@ -612,7 +628,7 @@ class HtmxHandler(
         val fullName = "$lastName, $firstName"
 
         val sort = Sort.by(Sort.Direction.ASC, "name")
-        val books = repo.bookMongoRepository.findBooksByAuthor(lastName, firstName, sort).toList()
+        val books = bookService.findBooksByAuthor(lastName, firstName, sort).toList()
 
         val imageTypes = bookService.imageTypes(books)
         val shortDescriptions = bookService.shortDescriptions(books)
@@ -736,40 +752,62 @@ class HtmxHandler(
     }
 
     /**
-     * Serves a book cover image from SeaweedFS or retrieves it from the book on demand.
+     * Serves a book cover preview image from SeaweedFS or retrieves it from the book on demand.
      * If the cover is not in SeaweedFS, it retrieves it from the book and caches it to SeaweedFS.
+     * If the book doesn't have a cover, it returns a 404 Not Found response.
      * 
      * @param req The server request
-     * @return The server response with the image data
+     * @return The server response with the preview image data
      */
     suspend fun getBookCover(req: ServerRequest): ServerResponse {
         val bookId = req.pathVariable("id")
 
-        // Try to get the book cover from SeaweedFS first
-        var coverInputStream = seaweedFSService.getBookCover(bookId)
+        // Get the book from the database first to check if it has a cover
+        val book = bookService.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+
+        // If the book doesn't have a cover, return 404 Not Found immediately
+        if (!book.hasCover) {
+            return ServerResponse.notFound().buildAndAwait()
+        }
+
+        // Try to get the book cover preview from SeaweedFS first
+        var coverInputStream = seaweedFSService.getBookCoverPreview(bookId)
         val contentType: String
 
         if (coverInputStream == null) {
-            // Cover not found in SeaweedFS, retrieve it from the book
-            val book = bookService.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
-            val commonBook = bookService.obtainBook(book.path) ?: return ServerResponse.notFound().buildAndAwait()
-
-            // Check if the book has a cover
-            if (commonBook.cover == null || commonBook.coverContentType == null) {
-                return ServerResponse.notFound().buildAndAwait()
-            }
-
-            // Cache the cover to SeaweedFS
-            seaweedFSService.saveBookCover(bookId, commonBook.cover!!, commonBook.coverContentType!!)
-
-            // Get the newly cached cover from SeaweedFS
+            // Try to get the original cover (the preview might not exist yet)
             coverInputStream = seaweedFSService.getBookCover(bookId)
-                ?: return ServerResponse.notFound().buildAndAwait()
 
-            contentType = commonBook.coverContentType!!
+            if (coverInputStream == null) {
+                // If we can't find the cover in SeaweedFS, let's try to get it from the book itself
+                // Cover not found in SeaweedFS, retrieve it from the book
+                val commonBook = bookService.obtainBook(book.path) ?: return ServerResponse.notFound().buildAndAwait()
+
+                // Check if the book has a cover
+                if (commonBook.cover == null || commonBook.coverContentType == null) {
+                    // Update the book in the database to reflect that it doesn't have a cover
+                    // This is a case where the hasCover flag was true but the book actually doesn't have a cover
+                    val updatedBook = book.copy(hasCover = false)
+                    bookService.saveBook(updatedBook)
+                    return ServerResponse.notFound().buildAndAwait()
+                }
+
+                // Cache the cover to SeaweedFS (this will also create and cache the preview)
+                seaweedFSService.saveBookCover(bookId, commonBook.cover!!, commonBook.coverContentType!!)
+
+                // Get the newly cached cover preview from SeaweedFS
+                coverInputStream = seaweedFSService.getBookCoverPreview(bookId)
+                    ?: return ServerResponse.notFound().buildAndAwait()
+
+                contentType = commonBook.coverContentType!!
+            } else {
+                // We found the original cover but not the preview, so we'll use the original
+                // Get the content type of the cover image from SeaweedFS
+                contentType = seaweedFSService.getBookCoverContentType(bookId)
+            }
         } else {
-            // Get the content type of the cover image from SeaweedFS
-            contentType = seaweedFSService.getBookCoverContentType(bookId)
+            // Get the content type of the cover preview image from SeaweedFS
+            contentType = seaweedFSService.getBookCoverPreviewContentType(bookId)
         }
 
         // Create an InputStreamResource with the cover image data
@@ -778,5 +816,132 @@ class HtmxHandler(
         return ServerResponse.ok()
             .contentType(MediaType.parseMediaType(contentType))
             .bodyValueAndAwait(inputStreamResource)
+    }
+
+    /**
+     * Serves book information in a modal.
+     * This is used when a user clicks the "Info" link on a book card.
+     * 
+     * @param req The server request
+     * @return The server response with HTML for the modal
+     */
+    suspend fun getBookInfo(req: ServerRequest): ServerResponse {
+        val bookId = req.pathVariable("id")
+
+        // Get the book from the database
+        val book = bookService.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+
+        // Create HTML for the modal content
+        val html = createHTML().div("box") {
+            div("content") {
+                h3 { +book.name }
+
+                if (book.authors.isNotEmpty()) {
+                    p {
+                        strong { +"Author(s): " }
+                        +book.authors.joinToString(", ") { "${it.firstName} ${it.lastName}" }
+                    }
+                }
+
+                if (book.sequence != null) {
+                    p {
+                        strong { +"Series: " }
+                        +book.sequence!!
+                        if (book.sequenceNumber != null) {
+                            +" (#${book.sequenceNumber})"
+                        }
+                    }
+                }
+
+                if (book.genres.isNotEmpty()) {
+                    p {
+                        strong { +"Genres: " }
+                        +book.genres.joinToString(", ")
+                    }
+                }
+
+                p {
+                    strong { +"File size: " }
+                    +"${(book.size / 1024).toString()} KB"
+                }
+
+                p {
+                    strong { +"File path: " }
+                    +book.path
+                }
+
+                // Add a download link
+                div("buttons") {
+                    a("/opds/book/${book.id}/download", classes = "button is-primary") {
+                        +"Download"
+                    }
+                }
+            }
+        }
+
+        return ServerResponse.ok()
+            .contentType(MediaType.TEXT_HTML)
+            .bodyValueAndAwait(html)
+    }
+
+    /**
+     * Serves a full-size book cover image from SeaweedFS.
+     * This is used when a user clicks on the preview image to see the full-size image in a popup.
+     * If the book doesn't have a cover, it returns a 404 Not Found response.
+     * 
+     * @param req The server request
+     * @return The server response with the full-size image data or HTML for the modal
+     */
+    suspend fun getFullBookCover(req: ServerRequest): ServerResponse {
+        val bookId = req.pathVariable("id")
+
+        // Get the book from the database first to check if it has a cover
+        val book = bookService.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+
+        // If the book doesn't have a cover, return 404 Not Found immediately
+        if (!book.hasCover) {
+            return ServerResponse.notFound().buildAndAwait()
+        }
+
+        // Get the full-size cover image from SeaweedFS
+        val coverInputStream = seaweedFSService.getBookCover(bookId)
+
+        // If the cover is not found in SeaweedFS, update the hasCover flag to false and return 404
+        if (coverInputStream == null) {
+            // Update the book in the database to reflect that it doesn't have a cover
+            val updatedBook = book.copy(hasCover = false)
+            bookService.saveBook(updatedBook)
+            return ServerResponse.notFound().buildAndAwait()
+        }
+
+        // Get the content type of the cover image
+        val contentType = seaweedFSService.getBookCoverContentType(bookId)
+
+        // Create an InputStreamResource with the cover image data
+        val inputStreamResource = InputStreamResource(coverInputStream)
+
+        // Check if this is an HTMX request for the modal content
+        val isHtmxRequest = req.headers().firstHeader("HX-Request") == "true"
+
+        if (isHtmxRequest) {
+            // Return HTML for the modal content with the full-size image
+            val html = createHTML().div("box") {
+                figure("image") {
+                    img(src = "/opds/fullimage/${bookId}") {
+                        attributes["loading"] = "lazy"
+                        attributes["alt"] = "Full-size book cover"
+                    }
+                }
+            }
+
+            return ServerResponse.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .bodyValueAndAwait(html)
+        } else {
+            // Return the image data directly
+            return ServerResponse.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .bodyValueAndAwait(inputStreamResource)
+        }
     }
 }
