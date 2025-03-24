@@ -43,7 +43,7 @@ class InpxBookHandler : DelegatingBookHandler {
 
     override fun supportFile(file: File) = file.name.endsWith(INPX_EXTENSION)
 
-    override fun obtainBooks(file: File, handlers: Collection<BookHandler>): Sequence<Book> {
+    override fun obtainBooks(file: File, handlers: Collection<BookHandler>): Sequence<Pair<Book, Long>> {
         return ZipFile(file).use { zip ->
             zip
                 .fileHeaders
@@ -57,8 +57,8 @@ class InpxBookHandler : DelegatingBookHandler {
         }
     }
 
-    private fun parseInpFile(inputStream: InputStream, inpxPath: String, inpFileName: String): List<Book> {
-        val books = mutableListOf<Book>()
+    private fun parseInpFile(inputStream: InputStream, inpxPath: String, inpFileName: String): List<Pair<Book, Long>> {
+        val books = mutableListOf<Pair<Book, Long>>()
 
         inputStream.bufferedReader().useLines { lines ->
             lines.forEach { line ->
@@ -99,7 +99,13 @@ class InpxBookHandler : DelegatingBookHandler {
                                 sequenceNumber = seriesNumber,
                                 path = createInpxPath(inpxPath, inpFileName, fileName, format)
                             )
-                            books.add(book)
+                            val resolve =
+                                File(inpxPath).parentFile.resolve(File(inpFileName).nameWithoutExtension + ".zip")
+                            if (resolve.exists()) {
+                                val zipFile =
+                                    ZipFile(resolve)
+                                books.add(book to zipFile.getFileHeader("$fileName.$format").uncompressedSize)
+                            }
                         }
                     }
                 }
@@ -133,7 +139,9 @@ class InpxBookHandler : DelegatingBookHandler {
         return genresString.split(":").map { it.trim() }.filter { it.isNotBlank() }
     }
 
-    override fun supportsPath(path: String) = path.startsWith(INPX_PREFIX) && path.contains(INPX_DELIMITER) && path.substringAfter(INPX_DELIMITER).contains(INP_DELIMITER)
+    override fun supportsPath(path: String) =
+        path.startsWith(INPX_PREFIX) && path.contains(INPX_DELIMITER) && path.substringAfter(INPX_DELIMITER)
+            .contains(INP_DELIMITER)
 
     override fun obtainBook(path: String, handlers: Collection<BookHandler>): Book {
         val components = parseInpxPath(path)
@@ -143,7 +151,7 @@ class InpxBookHandler : DelegatingBookHandler {
 
         // Find the ZIP file next to the INPX file with the same name but .zip extension
         val inpxFile = File(inpxPath)
-        val zipFileName = inpxFile.nameWithoutExtension
+        val zipFileName = File(inpFileName).nameWithoutExtension
         val zipFile = File(inpxFile.parent, "$zipFileName.zip")
 
         if (!zipFile.exists()) {
@@ -183,7 +191,7 @@ class InpxBookHandler : DelegatingBookHandler {
 
         // Find the ZIP file next to the INPX file with the same name but .zip extension
         val inpxFile = File(inpxPath)
-        val zipFileName = inpxFile.nameWithoutExtension
+        val zipFileName = File(inpFileName).nameWithoutExtension
         val zipFile = File(inpxFile.parent, "$zipFileName.zip")
 
         if (!zipFile.exists()) {

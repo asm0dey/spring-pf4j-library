@@ -13,7 +13,7 @@ interface BookHandler : ExtensionPoint {
 
 interface DelegatingBookHandler : ExtensionPoint {
     fun supportFile(file: File): Boolean
-    fun obtainBooks(file: File, handlers: Collection<BookHandler>): Sequence<Book>
+    fun obtainBooks(file: File, handlers: Collection<BookHandler>): Sequence<Pair<Book, Long>>
     fun supportsPath(path: String): Boolean
     fun obtainBook(path: String, handlers: Collection<BookHandler>): Book
     fun getData(path: String, handlers: Collection<BookHandler>): InputStream
