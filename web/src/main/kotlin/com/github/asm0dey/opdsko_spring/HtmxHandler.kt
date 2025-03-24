@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.server.*
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
+import java.nio.charset.Charset
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
 import kotlin.math.min
@@ -687,16 +688,18 @@ class HtmxHandler(
             val contentType = getContentTypeForExtension(targetFormat)
 
             val headers = HttpHeaders().apply {
-                contentDisposition = ContentDisposition.builder("attachment")
-                    .filename(fileName)
+                contentDisposition = ContentDisposition.attachment()
+                    .filename(fileName, Charset.forName("UTF-8"))
                     .build()
             }
-            convertedStream.use {
-                return ServerResponse.ok()
-                    .headers { it.addAll(headers) }
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .bodyValueAndAwait(InputStreamResource(it))
-            }
+
+            return ServerResponse.ok()
+                .headers { it.addAll(headers) }
+                .contentType(MediaType.parseMediaType(contentType))
+                .bodyValueAndAwait(withContext(Dispatchers.IO) {
+                    convertedStream.readAllBytes()
+                })
+                .also { convertedStream.close() }
 
         }
         // Handle direct download
@@ -704,8 +707,8 @@ class HtmxHandler(
         val contentType = getContentTypeForExtension(originalExtension)
 
         val headers = HttpHeaders().apply {
-            contentDisposition = ContentDisposition.builder("attachment")
-                .filename(fileName)
+            contentDisposition = ContentDisposition.attachment()
+                .filename(fileName, Charset.forName("UTF-8"))
                 .build()
         }
 
@@ -755,7 +758,7 @@ class HtmxHandler(
      * Serves a book cover preview image from SeaweedFS or retrieves it from the book on demand.
      * If the cover is not in SeaweedFS, it retrieves it from the book and caches it to SeaweedFS.
      * If the book doesn't have a cover, it returns a 404 Not Found response.
-     * 
+     *
      * @param req The server request
      * @return The server response with the preview image data
      */
@@ -821,7 +824,7 @@ class HtmxHandler(
     /**
      * Serves book information in a modal.
      * This is used when a user clicks the "Info" link on a book card.
-     * 
+     *
      * @param req The server request
      * @return The server response with HTML for the modal
      */
@@ -846,7 +849,7 @@ class HtmxHandler(
                 if (book.sequence != null) {
                     p {
                         strong { +"Series: " }
-                        +book.sequence!!
+                        +book.sequence
                         if (book.sequenceNumber != null) {
                             +" (#${book.sequenceNumber})"
                         }
@@ -888,7 +891,7 @@ class HtmxHandler(
      * Serves a full-size book cover image from SeaweedFS.
      * This is used when a user clicks on the preview image to see the full-size image in a popup.
      * If the book doesn't have a cover, it returns a 404 Not Found response.
-     * 
+     *
      * @param req The server request
      * @return The server response with the full-size image data or HTML for the modal
      */

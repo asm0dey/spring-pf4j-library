@@ -143,7 +143,7 @@ class SeaweedFSService(private val filerClient: FilerClient) {
         try {
             return SeaweedInputStream(filerClient, "/covers/$bookId")
         } catch (e: Exception) {
-            logger.warn("Error retrieving book cover from SeaweedFS: ${e.message}", e)
+            logger.warn("Error retrieving book cover from SeaweedFS: ${e.message}")
             return null
         }
     }
@@ -159,7 +159,7 @@ class SeaweedFSService(private val filerClient: FilerClient) {
         try {
             return SeaweedInputStream(filerClient, "/covers/$bookId.preview")
         } catch (e: Exception) {
-            logger.warn("Error retrieving book cover preview from SeaweedFS: ${e.message}", e)
+            logger.warn("Error retrieving book cover preview from SeaweedFS: ${e.message}")
             return null
         }
     }

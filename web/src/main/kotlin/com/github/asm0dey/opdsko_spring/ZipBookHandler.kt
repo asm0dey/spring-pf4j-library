@@ -19,14 +19,16 @@ private const val ZIP_EXTENSION = ".zip"
 class ZipBookHandler : DelegatingBookHandler {
 
     override fun supportFile(file: File) = file.name.endsWith(ZIP_EXTENSION)
-    override fun obtainBooks(file: File, handlers: Collection<BookHandler>): Sequence<Book> {
+    override fun obtainBooks(file: File, handlers: Collection<BookHandler>): Sequence<Pair<Book, Long>> {
         return ZipFile(file).use { zip ->
             sequence {
                 for (fileHeader in zip.fileHeaders) {
                     val book = handlers
                         .firstOrNull { it.supportsFile(fileHeader.fileName) { zip.getInputStream(fileHeader) } }
                         ?.bookInfo(fileHeader.fileName) { zip.getInputStream(fileHeader) } ?: continue
-                    yield(DelegatingBook(book).also { it.path = "$ZIP_PREFIX${file.absolutePath}#${book.path}" })
+                    yield(DelegatingBook(book).also {
+                        it.path = "$ZIP_PREFIX${file.absolutePath}#${book.path}"
+                    } to fileHeader.uncompressedSize)
                 }
             }
         }

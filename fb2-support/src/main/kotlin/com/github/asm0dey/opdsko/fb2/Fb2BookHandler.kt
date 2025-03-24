@@ -8,6 +8,9 @@ import org.pf4j.Extension
 import java.io.File
 import java.io.InputStream
 
+private fun extractCoverImage(fb: FictionBook) =
+    fb.description?.titleInfo?.coverPage?.firstOrNull()?.value?.replace("#", "")
+
 @Extension(points = [BookHandler::class])
 class Fb2BookHandler : BookHandler {
     override fun supportsFile(fileName: String, data: () -> InputStream) = fileName.lowercase().endsWith(".fb2")
@@ -35,10 +38,8 @@ private data class Fb2Book(
 
     constructor(fb: FictionBook, path: String) : this(
         title = fb.title,
-        cover = fb.binaries[fb.description?.titleInfo?.coverPage?.first()?.value?.replace("#", "")]?.binary,
-        coverContentType = fb.description?.titleInfo?.coverPage?.firstOrNull()?.value?.replace("#", "")?.let {
-            fb.binaries[it]?.contentType
-        },
+        cover = fb.binaries[extractCoverImage(fb)]?.binary,
+        coverContentType = fb.binaries[extractCoverImage(fb)]?.contentType,
         annotation = fb.description?.titleInfo?.annotation?.text,
         authors = fb.description?.titleInfo?.authors?.map {
             AuthorAdapter(

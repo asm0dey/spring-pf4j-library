@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service
 import java.io.File
 import java.io.InputStream
 import java.text.StringCharacterIterator
-import java.time.LocalDateTime
 import kotlin.math.abs
 import kotlin.math.sign
 import com.github.asm0dey.opdsko.common.Book as CommonBook
@@ -44,7 +43,7 @@ class BookService(
     }
 
 
-    fun obtainBooks(absolutePath: String): Sequence<CommonBook?> {
+    fun obtainBooks(absolutePath: String): Sequence<Pair<CommonBook, Long>> {
         val file = File(absolutePath)
         return delegates
             .firstOrNull { it.supportFile(file) }
@@ -54,6 +53,9 @@ class BookService(
                     .firstOrNull { it.supportsFile(absolutePath) { file.inputStream() } }
                     ?.bookInfo(absolutePath) { file.inputStream() }
             )
+                .filterNotNull()
+                .map { it to file.length() }
+
     }
 
     fun Long.humanReadable(): String {
@@ -206,7 +208,8 @@ class BookService(
      * @param prefixLength The length of the prefix
      * @return A flow of author letter results
      */
-    suspend fun findAuthorPrefixes(prefix: String, prefixLength: Int) = bookMongoRepository.findAuthorPrefixes(prefix, prefixLength)
+    suspend fun findAuthorPrefixes(prefix: String, prefixLength: Int) =
+        bookMongoRepository.findAuthorPrefixes(prefix, prefixLength)
 
     /**
      * Finds authors by prefix.
@@ -223,7 +226,8 @@ class BookService(
      * @param firstName The author's first name
      * @return A flow of series results
      */
-    suspend fun findSeriesByAuthor(lastName: String, firstName: String) = bookMongoRepository.findSeriesByAuthor(lastName, firstName)
+    suspend fun findSeriesByAuthor(lastName: String, firstName: String) =
+        bookMongoRepository.findSeriesByAuthor(lastName, firstName)
 
     /**
      * Finds books by series.
@@ -242,7 +246,8 @@ class BookService(
      * @param sort The sort order
      * @return A flow of books
      */
-    suspend fun findBooksByAuthorWithoutSeries(lastName: String, firstName: String, sort: Sort) = bookMongoRepository.findBooksByAuthorWithoutSeries(lastName, firstName, sort)
+    suspend fun findBooksByAuthorWithoutSeries(lastName: String, firstName: String, sort: Sort) =
+        bookMongoRepository.findBooksByAuthorWithoutSeries(lastName, firstName, sort)
 
     /**
      * Finds books by author.
@@ -252,7 +257,8 @@ class BookService(
      * @param sort The sort order
      * @return A flow of books
      */
-    suspend fun findBooksByAuthor(lastName: String, firstName: String, sort: Sort) = bookMongoRepository.findBooksByAuthor(lastName, firstName, sort)
+    suspend fun findBooksByAuthor(lastName: String, firstName: String, sort: Sort) =
+        bookMongoRepository.findBooksByAuthor(lastName, firstName, sort)
 
     /**
      * Saves a book.

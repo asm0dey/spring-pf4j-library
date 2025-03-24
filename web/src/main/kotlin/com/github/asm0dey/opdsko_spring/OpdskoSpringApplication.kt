@@ -121,8 +121,7 @@ class Scanner(
             }
 
             val processedBooks = books
-                .filterNotNull()
-                .map { commonBook ->
+                .map { (commonBook, size) ->
                     Book(
                         authors = commonBook.authors.map {
                             Author(
@@ -134,7 +133,7 @@ class Scanner(
                         sequence = commonBook.sequenceName,
                         sequenceNumber = commonBook.sequenceNumber,
                         name = commonBook.title,
-                        size = File(commonBook.path).length(),
+                        size = size,
                         path = commonBook.path,
                         hasCover = commonBook.cover != null
                     )

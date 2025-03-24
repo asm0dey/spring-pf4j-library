@@ -69,4 +69,6 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
 
     @Query("{ 'sequence': ?0 }")
     fun findBooksBySeries(series: String, sort: Sort): Flow<Book>
+
+    fun findAllByPathIn(paths: List<String>): Flow<Book>
 }
