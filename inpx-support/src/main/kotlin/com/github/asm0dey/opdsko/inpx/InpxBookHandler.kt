@@ -57,9 +57,7 @@ class InpxBookHandler : DelegatingBookHandler {
         }
     }
 
-    private fun parseInpFile(inputStream: InputStream, inpxPath: String, inpFileName: String): List<Pair<Book, Long>> {
-        val books = mutableListOf<Pair<Book, Long>>()
-
+    private fun parseInpFile(inputStream: InputStream, inpxPath: String, inpFileName: String): Sequence<Pair<Book, Long>> = sequence {
         inputStream.bufferedReader().useLines { lines ->
             lines.forEach { line ->
                 if (line.isNotBlank()) {
@@ -104,15 +102,13 @@ class InpxBookHandler : DelegatingBookHandler {
                             if (resolve.exists()) {
                                 val zipFile =
                                     ZipFile(resolve)
-                                books.add(book to zipFile.getFileHeader("$fileName.$format").uncompressedSize)
+                                yield(book to zipFile.getFileHeader("$fileName.$format").uncompressedSize)
                             }
                         }
                     }
                 }
             }
         }
-
-        return books
     }
 
     private fun parseAuthors(authorsString: String): List<Author> {
