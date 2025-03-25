@@ -111,49 +111,50 @@ class Scanner(
     private val bookMongoRepository: BookMongoRepository,
 ) {
     suspend fun scan(request: ServerRequest): ServerResponse {
-        for (file in settings.sources) {
-            val books = if (file.isDirectory) {
-                file.walkTopDown()
-                    .filter { it.isFile }
-                    .flatMap { bookService.obtainBooks(it.absolutePath) }
-            } else {
-                // Process individual file
-                bookService.obtainBooks(file.absolutePath)
-            }
-
-            val processedBooks = books
-                .map { (commonBook, size) ->
-                    Book(
-                        authors = commonBook.authors.map {
-                            Author(
-                                lastName = it.lastName ?: "",
-                                firstName = it.firstName ?: "",
-                                fullName = it.fullName(),
-                                middleName = it.middleName,
-                                nickname = it.nickname,
-                            )
-                        },
-                        genres = commonBook.genres,
-                        sequence = commonBook.sequenceName,
-                        sequenceNumber = commonBook.sequenceNumber,
-                        name = commonBook.title,
-                        size = size,
-                        path = commonBook.path,
-                        hasCover = commonBook.cover != null
-                    )
+        val processedBookChunks = settings
+            .sources
+            .asSequence()
+            .flatMap {
+                if (it.isDirectory) {
+                    it.walkTopDown()
+                        .filter { it.isFile }
+                        .flatMap { bookService.obtainBooks(it.absolutePath) }
+                } else {
+                    // Process individual file
+                    bookService.obtainBooks(it.absolutePath)
                 }
-                .toList()
+            }
+            .map { (commonBook, size) ->
+                Book(
+                    authors = commonBook.authors.map {
+                        Author(
+                            lastName = it.lastName ?: "",
+                            firstName = it.firstName ?: "",
+                            fullName = it.fullName(),
+                            middleName = it.middleName,
+                            nickname = it.nickname,
+                        )
+                    },
+                    genres = commonBook.genres,
+                    sequence = commonBook.sequenceName,
+                    sequenceNumber = commonBook.sequenceNumber,
+                    name = commonBook.title,
+                    size = size,
+                    path = commonBook.path,
+                    hasCover = commonBook.cover != null
+                )
+            }
+            .chunked(1000)
+        for (file in settings.sources) {
+            for (processedBookChunk in processedBookChunks) {
+                if (processedBookChunk.isNotEmpty()) {
+                    val savedBooksFlow = bookRepo.save(processedBookChunk)
+                    val savedBooks = savedBooksFlow.toList()
 
-            if (processedBooks.isNotEmpty()) {
-                // Save complete book information to MongoDB and get the saved books with MongoDB-generated IDs
-                val savedBooksFlow = bookRepo.save(processedBooks)
-                val savedBooks = savedBooksFlow.toList()
+                    val bookIndexItems = savedBooks.map { BookIndexItem(it.path, it.name) }
+                    meilisearch.saveBooks(bookIndexItems)
+                }
 
-                // Save book names and IDs to Meilisearch using the MongoDB-generated IDs
-                val bookIndexItems = savedBooks.map { BookIndexItem(it.path, it.name) }
-                meilisearch.saveBooks(bookIndexItems)
-
-                // Book covers will be retrieved and cached on demand, not during scan
             }
         }
         return ServerResponse.ok().buildAndAwait()
