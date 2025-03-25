@@ -440,13 +440,12 @@ class HtmxHandler(
 
         val x = createHTML(false).div("grid") {
             for (author in authors) {
-                val fullName = "${author.id.lastName}, ${author.id.firstName}"
-                val encodedLastName = URLEncoder.encode(author.id.lastName, "UTF-8")
-                val encodedFirstName = URLEncoder.encode(author.id.firstName, "UTF-8")
+                val fullName = author.id.fullName
+                val encodedFullName = URLEncoder.encode(fullName, "UTF-8")
                 NavTile(
                     fullName,
                     "View books by this author",
-                    "/api/author/view/$encodedLastName/$encodedFirstName"
+                    "/api/author/view/$encodedFullName"
                 )
             }
         }
@@ -459,29 +458,28 @@ class HtmxHandler(
      * Handler for author view - shows navigation options for an author
      */
     suspend fun authorView(req: ServerRequest): ServerResponse {
-        val lastName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("lastName"), "UTF-8")
+        val fullName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
         }
-        val firstName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("firstName"), "UTF-8")
+        val encodedFullName = withContext(Dispatchers.IO) {
+            URLEncoder.encode(fullName, "UTF-8")
         }
-        val fullName = "$lastName, $firstName"
 
         val x = createHTML(false).div("grid") {
             NavTile(
                 "By Series",
                 "View series by this author",
-                "/api/author/view/$lastName/$firstName/series"
+                "/api/author/view/$encodedFullName/series"
             )
             NavTile(
                 "Without Series",
                 "View books without series",
-                "/api/author/view/$lastName/$firstName/noseries"
+                "/api/author/view/$encodedFullName/noseries"
             )
             NavTile(
                 "All Books",
                 "View all books by this author",
-                "/api/author/view/$lastName/$firstName/all"
+                "/api/author/view/$encodedFullName/all"
             )
         }
 
@@ -489,7 +487,7 @@ class HtmxHandler(
             listOf(
                 "Library" to "/api",
                 "Authors" to "/api/author",
-                fullName to "/api/author/view/$lastName/$firstName"
+                fullName to "/api/author/view/$encodedFullName"
             )
         )
 
@@ -500,15 +498,12 @@ class HtmxHandler(
      * Handler for author's series
      */
     suspend fun authorSeries(req: ServerRequest): ServerResponse {
-        val lastName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("lastName"), "UTF-8")
+        val fullName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
         }
-        val firstName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("firstName"), "UTF-8")
-        }
-        val fullName = "$lastName, $firstName"
+        val encodedFullName = URLEncoder.encode(fullName, "UTF-8")
 
-        val series = bookService.findSeriesByAuthor(lastName, firstName).toList()
+        val series = bookService.findSeriesByAuthorFullName(fullName).toList()
 
         val x = createHTML(false).div("grid") {
             for (seriesResult in series) {
@@ -516,7 +511,7 @@ class HtmxHandler(
                 NavTile(
                     seriesResult.id,
                     "View books in this series",
-                    "/api/author/view/$lastName/$firstName/series/$encodedSeries"
+                    "/api/author/view/$encodedFullName/series/$encodedSeries"
                 )
             }
         }
@@ -525,8 +520,8 @@ class HtmxHandler(
             listOf(
                 "Library" to "/api",
                 "Authors" to "/api/author",
-                fullName to "/api/author/view/$lastName/$firstName",
-                "Series" to "/api/author/view/$lastName/$firstName/series"
+                fullName to "/api/author/view/$encodedFullName",
+                "Series" to "/api/author/view/$encodedFullName/series"
             )
         )
 
@@ -537,16 +532,18 @@ class HtmxHandler(
      * Handler for books in a series by an author
      */
     suspend fun authorSeriesBooks(req: ServerRequest): ServerResponse {
-        val lastName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("lastName"), "UTF-8")
-        }
-        val firstName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("firstName"), "UTF-8")
+        val fullName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
         }
         val seriesName = withContext(Dispatchers.IO) {
             URLDecoder.decode(req.pathVariable("series"), "UTF-8")
         }
-        val fullName = "$lastName, $firstName"
+        val encodedFullName = withContext(Dispatchers.IO) {
+            URLEncoder.encode(fullName, "UTF-8")
+        }
+        val encodedSeries = withContext(Dispatchers.IO) {
+            URLEncoder.encode(seriesName, "UTF-8")
+        }
 
         val sort = Sort.by(Sort.Direction.ASC, "sequenceNumber")
         val books = bookService.findBooksBySeries(seriesName, sort).toList()
@@ -564,16 +561,9 @@ class HtmxHandler(
             listOf(
                 "Library" to "/api",
                 "Authors" to "/api/author",
-                fullName to "/api/author/view/$lastName/$firstName",
-                "Series" to "/api/author/view/$lastName/$firstName/series",
-                seriesName to "/api/author/view/$lastName/$firstName/series/${
-                    withContext(Dispatchers.IO) {
-                        URLEncoder.encode(
-                            seriesName,
-                            "UTF-8"
-                        )
-                    }
-                }"
+                fullName to "/api/author/view/$encodedFullName",
+                "Series" to "/api/author/view/$encodedFullName/series",
+                seriesName to "/api/author/view/$encodedFullName/series/$encodedSeries"
             )
         )
 
@@ -584,16 +574,13 @@ class HtmxHandler(
      * Handler for books without series by an author
      */
     suspend fun authorNoSeriesBooks(req: ServerRequest): ServerResponse {
-        val lastName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("lastName"), "UTF-8")
+        val fullName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
         }
-        val firstName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("firstName"), "UTF-8")
-        }
-        val fullName = "$lastName, $firstName"
+        val encodedFullName = URLEncoder.encode(fullName, "UTF-8")
 
         val sort = Sort.by(Sort.Direction.ASC, "name")
-        val books = bookService.findBooksByAuthorWithoutSeries(lastName, firstName, sort).toList()
+        val books = bookService.findBooksByAuthorWithoutSeriesFullName(fullName, sort).toList()
 
         val imageTypes = bookService.imageTypes(books)
         val shortDescriptions = bookService.shortDescriptions(books)
@@ -608,8 +595,8 @@ class HtmxHandler(
             listOf(
                 "Library" to "/api",
                 "Authors" to "/api/author",
-                fullName to "/api/author/view/$lastName/$firstName",
-                "Without Series" to "/api/author/view/$lastName/$firstName/noseries"
+                fullName to "/api/author/view/$encodedFullName",
+                "Without Series" to "/api/author/view/$encodedFullName/noseries"
             )
         )
 
@@ -620,16 +607,13 @@ class HtmxHandler(
      * Handler for all books by an author
      */
     suspend fun authorAllBooks(req: ServerRequest): ServerResponse {
-        val lastName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("lastName"), "UTF-8")
+        val fullName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
         }
-        val firstName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("firstName"), "UTF-8")
-        }
-        val fullName = "$lastName, $firstName"
+        val encodedFullName = req.pathVariable("fullName")
 
         val sort = Sort.by(Sort.Direction.ASC, "name")
-        val books = bookService.findBooksByAuthor(lastName, firstName, sort).toList()
+        val books = bookService.findBooksByAuthorFullName(fullName, sort).toList()
 
         val imageTypes = bookService.imageTypes(books)
         val shortDescriptions = bookService.shortDescriptions(books)
@@ -644,8 +628,8 @@ class HtmxHandler(
             listOf(
                 "Library" to "/api",
                 "Authors" to "/api/author",
-                fullName to "/api/author/view/$lastName/$firstName",
-                "All Books" to "/api/author/view/$lastName/$firstName/all"
+                fullName to "/api/author/view/$encodedFullName",
+                "All Books" to "/api/author/view/$encodedFullName/all"
             )
         )
 
@@ -834,22 +818,42 @@ class HtmxHandler(
         // Get the book from the database
         val book = bookService.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
 
+        // Get the book annotation from the original file
+        val commonBook = bookService.obtainBook(book.path)
+        val annotation = commonBook?.annotation
+
         // Create HTML for the modal content
         val html = createHTML().div("box") {
             div("content") {
+                // Show full-size cover if available
+                if (book.hasCover) {
+                    figure("image") {
+                        img(src = "/opds/fullimage/${book.id}") {
+                            attributes["loading"] = "lazy"
+                            attributes["alt"] = "Book cover for ${book.name}"
+                        }
+                    }
+                }
+
                 h3 { +book.name }
 
                 if (book.authors.isNotEmpty()) {
-                    p {
+                    div("tags") {
                         strong { +"Author(s): " }
-                        +book.authors.joinToString(", ") { "${it.firstName} ${it.lastName}" }
+                        book.authors.forEach { author ->
+                            a(href = "/api/author/view/${URLEncoder.encode(author.fullName, Charset.defaultCharset())}", classes = "tag is-info") {
+                                +"${author.firstName} ${author.lastName}"
+                            }
+                        }
                     }
                 }
 
                 if (book.sequence != null) {
                     p {
                         strong { +"Series: " }
-                        +book.sequence
+                        a(href = "/api/series/${URLEncoder.encode(book.sequence, Charset.defaultCharset())}") {
+                            +book.sequence
+                        }
                         if (book.sequenceNumber != null) {
                             +" (#${book.sequenceNumber})"
                         }
@@ -857,26 +861,28 @@ class HtmxHandler(
                 }
 
                 if (book.genres.isNotEmpty()) {
-                    p {
+                    div("tags") {
                         strong { +"Genres: " }
-                        +book.genres.joinToString(", ")
+                        book.genres.forEach { genre ->
+                            span("tag") {
+                                +genre
+                            }
+                        }
                     }
                 }
 
                 p {
                     strong { +"File size: " }
-                    +"${(book.size / 1024).toString()} KB"
+                    +"${(book.size / 1024)} KB"
                 }
 
-                p {
-                    strong { +"File path: " }
-                    +book.path
-                }
-
-                // Add a download link
-                div("buttons") {
-                    a("/opds/book/${book.id}/download", classes = "button is-primary") {
-                        +"Download"
+                // Show book description if available
+                if (!annotation.isNullOrEmpty()) {
+                    div {
+                        strong { +"Description: " }
+                        div("book-description") {
+                            +annotation
+                        }
                     }
                 }
             }
@@ -885,6 +891,44 @@ class HtmxHandler(
         return ServerResponse.ok()
             .contentType(MediaType.TEXT_HTML)
             .bodyValueAndAwait(html)
+    }
+
+    /**
+     * Handler for books in a series, regardless of author
+     */
+    suspend fun seriesBooks(req: ServerRequest): ServerResponse {
+        val seriesName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(req.pathVariable("series"), "UTF-8")
+        }
+
+        val sort = Sort.by(Sort.Direction.ASC, "sequenceNumber")
+        val books = bookService.findBooksBySeries(seriesName, sort).toList()
+
+        val imageTypes = bookService.imageTypes(books)
+        val shortDescriptions = bookService.shortDescriptions(books)
+
+        val x = createHTML(false).div("grid") {
+            for (book in books) {
+                BookTile(book, imageTypes, shortDescriptions)
+            }
+        }
+
+        val breadcrumbs = BreadCrumbs(
+            listOf(
+                "Library" to "/api",
+                "Series" to "/api/series",
+                seriesName to "/api/series/${
+                    withContext(Dispatchers.IO) {
+                        URLEncoder.encode(
+                            seriesName,
+                            "UTF-8"
+                        )
+                    }
+                }"
+            )
+        )
+
+        return ok(smartHtml(req, x, breadcrumbs))
     }
 
     /**

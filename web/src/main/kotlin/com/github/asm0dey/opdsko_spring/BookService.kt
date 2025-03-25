@@ -230,6 +230,15 @@ class BookService(
         bookMongoRepository.findSeriesByAuthor(lastName, firstName)
 
     /**
+     * Finds series by author using full name.
+     *
+     * @param fullName The author's full name
+     * @return A flow of series results
+     */
+    suspend fun findSeriesByAuthorFullName(fullName: String) =
+        bookMongoRepository.findSeriesByAuthorFullName(fullName)
+
+    /**
      * Finds books by series.
      *
      * @param series The series name
@@ -250,6 +259,16 @@ class BookService(
         bookMongoRepository.findBooksByAuthorWithoutSeries(lastName, firstName, sort)
 
     /**
+     * Finds books by author without series using full name.
+     *
+     * @param fullName The author's full name
+     * @param sort The sort order
+     * @return A flow of books
+     */
+    suspend fun findBooksByAuthorWithoutSeriesFullName(fullName: String, sort: Sort) =
+        bookMongoRepository.findBooksByAuthorWithoutSeriesFullName(fullName, sort)
+
+    /**
      * Finds books by author.
      *
      * @param lastName The author's last name
@@ -259,6 +278,16 @@ class BookService(
      */
     suspend fun findBooksByAuthor(lastName: String, firstName: String, sort: Sort) =
         bookMongoRepository.findBooksByAuthor(lastName, firstName, sort)
+
+    /**
+     * Finds books by author using full name.
+     *
+     * @param fullName The author's full name
+     * @param sort The sort order
+     * @return A flow of books
+     */
+    suspend fun findBooksByAuthorFullName(fullName: String, sort: Sort) =
+        bookMongoRepository.findBooksByAuthorFullName(fullName, sort)
 
     /**
      * Saves a book.

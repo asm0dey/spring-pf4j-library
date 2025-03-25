@@ -17,7 +17,7 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
     @Aggregation(
         pipeline = [
             "{ \$unwind: '\$authors' }",
-            "{ \$group: { _id: { \$toUpper: { \$substrCP: ['\$authors.lastName', 0, 1] } }, count: { \$sum: 1 } } }",
+            "{ \$group: { _id: { \$toUpper: { \$substrCP: ['\$authors.fullName', 0, 1] } }, count: { \$sum: 1 } } }",
             "{ \$sort: { _id: 1 } }"
         ]
     )
@@ -26,8 +26,8 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
     @Aggregation(
         pipeline = [
             "{ \$unwind: '\$authors' }",
-            "{ \$match: { 'authors.lastName': { \$regex: '^?0', \$options: 'i' } } }",
-            "{ \$group: { _id: { \$toUpper: { \$substrCP: ['\$authors.lastName', 0, ?1] } }, count: { \$sum: 1 } } }",
+            "{ \$match: { 'authors.fullName': { \$regex: '^?0', \$options: 'i' } } }",
+            "{ \$group: { _id: { \$toUpper: { \$substrCP: ['\$authors.fullName', 0, ?1] } }, count: { \$sum: 1 } } }",
             "{ \$sort: { _id: 1 } }"
         ]
     )
@@ -36,7 +36,7 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
     @Aggregation(
         pipeline = [
             "{ \$unwind: '\$authors' }",
-            "{ \$match: { 'authors.lastName': { \$regex: '^?0$', \$options: 'i' } } }",
+            "{ \$match: { 'authors.fullName': { \$regex: '^?0$', \$options: 'i' } } }",
             "{ \$count: 'count' }"
         ]
     )
@@ -45,27 +45,43 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
     @Aggregation(
         pipeline = [
             "{ \$unwind: '\$authors' }",
-            "{ \$match: { 'authors.lastName': { \$regex: '^?0', \$options: 'i' } } }",
-            "{ \$group: { _id: { lastName: '\$authors.lastName', firstName: '\$authors.firstName' } } }",
-            "{ \$sort: { '_id.lastName': 1, '_id.firstName': 1 } }"
+            "{ \$match: { 'authors.fullName': { \$regex: '^?0', \$options: 'i' } } }",
+            "{ \$group: { _id: { fullName: '\$authors.fullName', lastName: '\$authors.lastName', firstName: '\$authors.firstName' } } }",
+            "{ \$sort: { '_id.fullName': 1 } }"
         ]
     )
     fun findAuthorsByPrefix(prefix: String): Flow<AuthorResult>
 
-    @Query("{ 'authors': { \$elemMatch: { 'lastName': ?0, 'firstName': ?1 } } }")
+    @Query("{ 'authors': { \$elemMatch: { 'fullName': { \$concat: [?0, ', ', ?1] } } } }")
     fun findBooksByAuthor(lastName: String, firstName: String, sort: Sort): Flow<Book>
 
-    @Query("{ 'authors': { \$elemMatch: { 'lastName': ?0, 'firstName': ?1 } }, 'sequence': null }")
+    @Query("{ 'authors': { \$elemMatch: { 'fullName': ?0 } } }")
+    fun findBooksByAuthorFullName(fullName: String, sort: Sort): Flow<Book>
+
+
+    @Query("{ 'authors': { \$elemMatch: { 'fullName': { \$concat: [?0, ', ', ?1] } } }, 'sequence': null }")
     fun findBooksByAuthorWithoutSeries(lastName: String, firstName: String, sort: Sort): Flow<Book>
+
+    @Query("{ 'authors': { \$elemMatch: { 'fullName': ?0 } }, 'sequence': null }")
+    fun findBooksByAuthorWithoutSeriesFullName(fullName: String, sort: Sort): Flow<Book>
 
     @Aggregation(
         pipeline = [
-            "{ \$match: { 'authors': { \$elemMatch: { 'lastName': ?0, 'firstName': ?1 } }, 'sequence': { \$ne: null } } }",
+            "{ \$match: { 'authors': { \$elemMatch: { 'fullName': { \$concat: [?0, ', ', ?1] } } }, 'sequence': { \$ne: null } } }",
             "{ \$group: { _id: '\$sequence' } }",
             "{ \$sort: { _id: 1 } }"
         ]
     )
     fun findSeriesByAuthor(lastName: String, firstName: String): Flow<SeriesResult>
+
+    @Aggregation(
+        pipeline = [
+            "{ \$match: { 'authors': { \$elemMatch: { 'fullName': ?0 } }, 'sequence': { \$ne: null } } }",
+            "{ \$group: { _id: '\$sequence' } }",
+            "{ \$sort: { _id: 1 } }"
+        ]
+    )
+    fun findSeriesByAuthorFullName(fullName: String): Flow<SeriesResult>
 
     @Query("{ 'sequence': ?0 }")
     fun findBooksBySeries(series: String, sort: Sort): Flow<Book>

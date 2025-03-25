@@ -83,11 +83,12 @@ class RoutingConfig {
             // Author navigation routes
             GET("/author", htmxHandler::authorFirstLevel)
             GET("/author/{prefix}", htmxHandler::authorPrefixLevel)
-            GET("/author/view/{lastName}/{firstName}", htmxHandler::authorView)
-            GET("/author/view/{lastName}/{firstName}/series", htmxHandler::authorSeries)
-            GET("/author/view/{lastName}/{firstName}/series/{series}", htmxHandler::authorSeriesBooks)
-            GET("/author/view/{lastName}/{firstName}/noseries", htmxHandler::authorNoSeriesBooks)
-            GET("/author/view/{lastName}/{firstName}/all", htmxHandler::authorAllBooks)
+            GET("/author/view/{fullName}", htmxHandler::authorView)
+            GET("/author/view/{fullName}/series", htmxHandler::authorSeries)
+            GET("/author/view/{fullName}/series/{series}", htmxHandler::authorSeriesBooks)
+            GET("/author/view/{fullName}/noseries", htmxHandler::authorNoSeriesBooks)
+            GET("/author/view/{fullName}/all", htmxHandler::authorAllBooks)
+            GET("/series/{series}", htmxHandler::seriesBooks)
         }
         GET("/opds/book/{id}/download", htmxHandler::downloadBook)
         GET("/opds/book/{id}/download/{format}", htmxHandler::downloadBook)
@@ -126,7 +127,10 @@ class Scanner(
                         authors = commonBook.authors.map {
                             Author(
                                 lastName = it.lastName ?: "",
-                                firstName = it.firstName ?: ""
+                                firstName = it.firstName ?: "",
+                                fullName = it.fullName(),
+                                middleName = it.middleName,
+                                nickname = it.nickname,
                             )
                         },
                         genres = commonBook.genres,
@@ -159,7 +163,7 @@ class Scanner(
      * Cleans up books that are no longer available in the sources.
      * For each source, scans it and removes books if they are not available anymore.
      * Uses book handlers and delegate book handlers to determine if books still exist.
-     * 
+     *
      * @param request The server request
      * @return The server response
      */
@@ -232,7 +236,6 @@ typealias BookWithInfo = Book
 
 @Document
 data class Book(
-    @Id val id: String = UUID.randomUUID().toString(),
     val authors: List<Author>,
     var genres: List<String>,
     val sequence: String? = null,
@@ -241,8 +244,15 @@ data class Book(
     val added: LocalDateTime = LocalDateTime.now(),
     val size: Long,
     @Indexed(unique = true) val path: String,
+    @Id val id: String = UUID.randomUUID().toString(),
     val hasCover: Boolean = true
 )
 
-data class Author(val lastName: String, val firstName: String)
-
+data class Author(
+    override val lastName: String,
+    override val firstName: String,
+    override val middleName: String? = null,
+    override val nickname: String? = null,
+    @Indexed val fullName: String = "$lastName, $firstName"
+) : com.github.asm0dey.opdsko.common.Author {
+}
