@@ -11,7 +11,7 @@ data class AuthorLetterResult(@Id val id: String, val count: Int = 0)
  * Result class for author aggregation queries
  */
 data class AuthorResult(@Id val id: AuthorId) {
-    data class AuthorId(val lastName: String, val firstName: String)
+    data class AuthorId(val fullName: String, val lastName: String, val firstName: String)
 }
 
 /**

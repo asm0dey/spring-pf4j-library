@@ -1,7 +1,6 @@
 package com.github.asm0dey.opdsko_spring.migrations
 
 import com.mongodb.client.result.UpdateResult
-import com.mongodb.reactivestreams.client.ClientSession
 import com.mongodb.reactivestreams.client.MongoClient
 import io.mongock.api.annotations.ChangeUnit
 import io.mongock.api.annotations.Execution
