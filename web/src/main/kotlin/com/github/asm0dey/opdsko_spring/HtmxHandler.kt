@@ -6,13 +6,11 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
-import org.springframework.core.io.InputStreamResource
 import org.springframework.data.domain.Sort
-import org.springframework.http.ContentDisposition
-import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.*
+import org.springframework.web.reactive.function.server.ServerResponse.ok
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -41,7 +39,7 @@ class HtmxHandler(
     suspend fun search(req: ServerRequest): ServerResponse {
         val page = req.queryParamOrNull("page")?.toIntOrNull()?.minus(1) ?: 0
         val searchTerm = req.queryParam("search").getOrNull()!!
-        val searchBookByText = bookService.searchBookByText(searchTerm, page)
+        val searchBookByText = bookService.searchBookByName(searchTerm, page)
         println(searchBookByText)
         val x = createHTML(false).div("grid") {
             NavTile("New books", "Recent publications from this catalog", "/api/new/1")
@@ -73,7 +71,7 @@ class HtmxHandler(
 
 
     private suspend fun ok(responseData: String) =
-        ServerResponse.ok().contentType(MediaType.TEXT_HTML).bodyValueAndAwait(responseData)
+        ok().contentType(MediaType.TEXT_HTML).bodyValueAndAwait(responseData)
 
     private fun smartHtml(
         call: ServerRequest,
@@ -186,6 +184,7 @@ class HtmxHandler(
                     }
                 }
                 script(src = "/webjars/htmx.org/2.0.4/dist/htmx.min.js") {}
+                script(src = "/webjars/htmx-ext-sse/2.2.3/dist/sse.min.js") {}
                 script(src = "/webjars/hyperscript.org/0.9.13/dist/_hyperscript.min.js") {}
             }
 
@@ -205,7 +204,7 @@ class HtmxHandler(
 
     @Suppress("FunctionName")
     private fun DIV.BookTile(
-        bookWithInfo: BookWithInfo,
+        bookWithInfo: Book,
         images: Map<String, String?>,
         descriptionsShort: Map<String, String?>
     ) {
@@ -422,7 +421,7 @@ class HtmxHandler(
                 NavTile(
                     title,
                     "Authors starting with ${prefixResult.id}",
-                    "/api/author/${prefixResult.id}"
+                    "/api/author/${URLEncoder.encode(prefixResult.id, "UTF-8")}"
                 )
             }
         }
@@ -431,9 +430,6 @@ class HtmxHandler(
         return ok(smartHtml(req, x, breadcrumbs))
     }
 
-    /**
-     * Handler for author navigation - full author names
-     */
     suspend fun authorFullNames(req: ServerRequest): ServerResponse {
         val prefix = req.pathVariable("prefix")
         val authors = bookService.findAuthorsByPrefix(prefix).toList()
@@ -454,9 +450,6 @@ class HtmxHandler(
         return ok(smartHtml(req, x, breadcrumbs))
     }
 
-    /**
-     * Handler for author view - shows navigation options for an author
-     */
     suspend fun authorView(req: ServerRequest): ServerResponse {
         val fullName = withContext(Dispatchers.IO) {
             URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
@@ -494,9 +487,6 @@ class HtmxHandler(
         return ok(smartHtml(req, x, breadcrumbs))
     }
 
-    /**
-     * Handler for author's series
-     */
     suspend fun authorSeries(req: ServerRequest): ServerResponse {
         val fullName = withContext(Dispatchers.IO) {
             URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
@@ -528,9 +518,6 @@ class HtmxHandler(
         return ok(smartHtml(req, x, breadcrumbs))
     }
 
-    /**
-     * Handler for books in a series by an author
-     */
     suspend fun authorSeriesBooks(req: ServerRequest): ServerResponse {
         val fullName = withContext(Dispatchers.IO) {
             URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
@@ -570,9 +557,6 @@ class HtmxHandler(
         return ok(smartHtml(req, x, breadcrumbs))
     }
 
-    /**
-     * Handler for books without series by an author
-     */
     suspend fun authorNoSeriesBooks(req: ServerRequest): ServerResponse {
         val fullName = withContext(Dispatchers.IO) {
             URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
@@ -603,9 +587,6 @@ class HtmxHandler(
         return ok(smartHtml(req, x, breadcrumbs))
     }
 
-    /**
-     * Handler for all books by an author
-     */
     suspend fun authorAllBooks(req: ServerRequest): ServerResponse {
         val fullName = withContext(Dispatchers.IO) {
             URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
@@ -636,9 +617,6 @@ class HtmxHandler(
         return ok(smartHtml(req, x, breadcrumbs))
     }
 
-    /**
-     * Helper function to build breadcrumbs for author navigation
-     */
     private fun buildAuthorBreadcrumbs(prefix: String): String {
         val breadcrumbItems = mutableListOf<Pair<String, String>>()
         breadcrumbItems.add("Library" to "/api")
@@ -657,161 +635,14 @@ class HtmxHandler(
         val bookId = req.pathVariable("id")
         val targetFormat = req.pathVariableOrNull("format")
 
-        // Get the book from the repository
-        val book = bookService.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
-
-        // Determine the original extension
-        val originalExtension = book.path.substringAfterLast('.')
-
-        if (targetFormat != null) {
-            // Handle format conversion
-            val convertedStream = bookService.convertBook(book.path, targetFormat)
-                ?: return ServerResponse.badRequest().bodyValueAndAwait("Conversion to $targetFormat not supported")
-
-            val fileName = generateFileName(book, targetFormat)
-            val contentType = getContentTypeForExtension(targetFormat)
-
-            val headers = HttpHeaders().apply {
-                contentDisposition = ContentDisposition.attachment()
-                    .filename(fileName, Charset.forName("UTF-8"))
-                    .build()
-            }
-
-            return ServerResponse.ok()
-                .headers { it.addAll(headers) }
-                .contentType(MediaType.parseMediaType(contentType))
-                .bodyValueAndAwait(withContext(Dispatchers.IO) {
-                    convertedStream.readAllBytes()
-                })
-                .also { convertedStream.close() }
-
-        }
-        // Handle direct download
-        val fileName = generateFileName(book, originalExtension)
-        val contentType = getContentTypeForExtension(originalExtension)
-
-        val headers = HttpHeaders().apply {
-            contentDisposition = ContentDisposition.attachment()
-                .filename(fileName, Charset.forName("UTF-8"))
-                .build()
-        }
-
-        return ServerResponse.ok()
-            .headers { it.addAll(headers) }
-            .contentType(MediaType.parseMediaType(contentType))
-            .bodyValueAndAwait(InputStreamResource(bookService.getBookData(book.path)))
+        return bookService.downloadBook(bookId, targetFormat)
     }
 
-    /**
-     * Generates a file name from the book's metadata.
-     * The format is: "BookName [SequenceName #SequenceNumber].extension"
-     * If sequence name or number is not available, they are omitted.
-     */
-    private fun generateFileName(book: Book, extension: String): String {
-        val baseFileName = buildString {
-            append(book.name.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
-
-            if (book.sequence != null) {
-                append(" [")
-                append(book.sequence.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
-
-                if (book.sequenceNumber != null) {
-                    append(" #")
-                    append(book.sequenceNumber)
-                }
-
-                append("]")
-            }
-        }
-
-        return "$baseFileName.$extension"
-    }
-
-    private fun getContentTypeForExtension(extension: String): String {
-        return when (extension.lowercase()) {
-            "epub" -> "application/epub+zip"
-            "fb2" -> "application/x-fictionbook+xml"
-            "pdf" -> "application/pdf"
-            "mobi" -> "application/x-mobipocket-ebook"
-            "txt" -> "text/plain"
-            else -> "application/octet-stream"
-        }
-    }
-
-    /**
-     * Serves a book cover preview image from SeaweedFS or retrieves it from the book on demand.
-     * If the cover is not in SeaweedFS, it retrieves it from the book and caches it to SeaweedFS.
-     * If the book doesn't have a cover, it returns a 404 Not Found response.
-     *
-     * @param req The server request
-     * @return The server response with the preview image data
-     */
     suspend fun getBookCover(req: ServerRequest): ServerResponse {
         val bookId = req.pathVariable("id")
-
-        // Get the book from the database first to check if it has a cover
-        val book = bookService.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
-
-        // If the book doesn't have a cover, return 404 Not Found immediately
-        if (!book.hasCover) {
-            return ServerResponse.notFound().buildAndAwait()
-        }
-
-        // Try to get the book cover preview from SeaweedFS first
-        var coverInputStream = seaweedFSService.getBookCoverPreview(bookId)
-        val contentType: String
-
-        if (coverInputStream == null) {
-            // Try to get the original cover (the preview might not exist yet)
-            coverInputStream = seaweedFSService.getBookCover(bookId)
-
-            if (coverInputStream == null) {
-                // If we can't find the cover in SeaweedFS, let's try to get it from the book itself
-                // Cover not found in SeaweedFS, retrieve it from the book
-                val commonBook = bookService.obtainBook(book.path) ?: return ServerResponse.notFound().buildAndAwait()
-
-                // Check if the book has a cover
-                if (commonBook.cover == null || commonBook.coverContentType == null) {
-                    // Update the book in the database to reflect that it doesn't have a cover
-                    // This is a case where the hasCover flag was true but the book actually doesn't have a cover
-                    val updatedBook = book.copy(hasCover = false)
-                    bookService.saveBook(updatedBook)
-                    return ServerResponse.notFound().buildAndAwait()
-                }
-
-                // Cache the cover to SeaweedFS (this will also create and cache the preview)
-                seaweedFSService.saveBookCover(bookId, commonBook.cover!!, commonBook.coverContentType!!)
-
-                // Get the newly cached cover preview from SeaweedFS
-                coverInputStream = seaweedFSService.getBookCoverPreview(bookId)
-                    ?: return ServerResponse.notFound().buildAndAwait()
-
-                contentType = commonBook.coverContentType!!
-            } else {
-                // We found the original cover but not the preview, so we'll use the original
-                // Get the content type of the cover image from SeaweedFS
-                contentType = seaweedFSService.getBookCoverContentType(bookId)
-            }
-        } else {
-            // Get the content type of the cover preview image from SeaweedFS
-            contentType = seaweedFSService.getBookCoverPreviewContentType(bookId)
-        }
-
-        // Create an InputStreamResource with the cover image data
-        val inputStreamResource = InputStreamResource(coverInputStream)
-
-        return ServerResponse.ok()
-            .contentType(MediaType.parseMediaType(contentType))
-            .bodyValueAndAwait(inputStreamResource)
+        return bookService.getBookCover(bookId, seaweedFSService)
     }
 
-    /**
-     * Serves book information in a modal.
-     * This is used when a user clicks the "Info" link on a book card.
-     *
-     * @param req The server request
-     * @return The server response with HTML for the modal
-     */
     suspend fun getBookInfo(req: ServerRequest): ServerResponse {
         val bookId = req.pathVariable("id")
 
@@ -888,14 +719,11 @@ class HtmxHandler(
             }
         }
 
-        return ServerResponse.ok()
+        return ok()
             .contentType(MediaType.TEXT_HTML)
             .bodyValueAndAwait(html)
     }
 
-    /**
-     * Handler for books in a series, regardless of author
-     */
     suspend fun seriesBooks(req: ServerRequest): ServerResponse {
         val seriesName = withContext(Dispatchers.IO) {
             URLDecoder.decode(req.pathVariable("series"), "UTF-8")
@@ -931,47 +759,11 @@ class HtmxHandler(
         return ok(smartHtml(req, x, breadcrumbs))
     }
 
-    /**
-     * Serves a full-size book cover image from SeaweedFS.
-     * This is used when a user clicks on the preview image to see the full-size image in a popup.
-     * If the book doesn't have a cover, it returns a 404 Not Found response.
-     *
-     * @param req The server request
-     * @return The server response with the full-size image data or HTML for the modal
-     */
     suspend fun getFullBookCover(req: ServerRequest): ServerResponse {
         val bookId = req.pathVariable("id")
-
-        // Get the book from the database first to check if it has a cover
-        val book = bookService.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
-
-        // If the book doesn't have a cover, return 404 Not Found immediately
-        if (!book.hasCover) {
-            return ServerResponse.notFound().buildAndAwait()
-        }
-
-        // Get the full-size cover image from SeaweedFS
-        val coverInputStream = seaweedFSService.getBookCover(bookId)
-
-        // If the cover is not found in SeaweedFS, update the hasCover flag to false and return 404
-        if (coverInputStream == null) {
-            // Update the book in the database to reflect that it doesn't have a cover
-            val updatedBook = book.copy(hasCover = false)
-            bookService.saveBook(updatedBook)
-            return ServerResponse.notFound().buildAndAwait()
-        }
-
-        // Get the content type of the cover image
-        val contentType = seaweedFSService.getBookCoverContentType(bookId)
-
-        // Create an InputStreamResource with the cover image data
-        val inputStreamResource = InputStreamResource(coverInputStream)
-
-        // Check if this is an HTMX request for the modal content
         val isHtmxRequest = req.headers().firstHeader("HX-Request") == "true"
 
         if (isHtmxRequest) {
-            // Return HTML for the modal content with the full-size image
             val html = createHTML().div("box") {
                 figure("image") {
                     img(src = "/opds/fullimage/${bookId}") {
@@ -981,14 +773,11 @@ class HtmxHandler(
                 }
             }
 
-            return ServerResponse.ok()
+            return ok()
                 .contentType(MediaType.TEXT_HTML)
                 .bodyValueAndAwait(html)
         } else {
-            // Return the image data directly
-            return ServerResponse.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .bodyValueAndAwait(inputStreamResource)
+            return bookService.getFullBookCover(bookId, seaweedFSService)
         }
     }
 }

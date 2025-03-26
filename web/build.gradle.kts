@@ -30,10 +30,6 @@ repositories {
 dependencies {
     api(project(":common"))
     developmentOnly(libs.spring.boot.docker.compose)
-    testRuntimeOnly(libs.spring.boot.docker.compose)
-//    api(project(":epub-support", configuration = "shadow"))
-//    api(project(":fb2-support", configuration = "shadow"))
-//    api(project(":fb2-support"))
     implementation(project(":spring-meilisearch"))
     implementation(project(":seaweedfs-spring"))
     implementation(libs.seaweedfs)
@@ -53,28 +49,18 @@ dependencies {
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.meilisearch)
 
-    // Mongock dependencies
     implementation(platform(libs.mongock.bom))
     implementation(libs.mongock.springboot)
     implementation(libs.mongock.mongodb.reactive.driver)
-//    implementation(libs.tinylog)
-//    implementation(libs.tinylog.kotlin)
-//    implementation(libs.tinylog.slf4j)
     implementation(libs.zip4j)
     implementation(platform(BOM_COORDINATES))
     kapt(libs.pf4j)
     implementation(libs.pf4j)
-    /*
-        implementation(libs.pf4j.spring) {
-            exclude("org.slf4j")
-            exclude("org.springframework")
-        }
-    */
     runtimeOnly(libs.bulma)
     runtimeOnly(libs.font.awesome)
     runtimeOnly(libs.htmx.org)
+    runtimeOnly(libs.htmx.ext.sse)
     runtimeOnly(libs.hyperscript)
-    runtimeOnly(libs.postgresql)
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.spring.boot.testcontainers)
     testImplementation(libs.spring.boot.starter.test)
@@ -94,9 +80,6 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-
-
-
 graalvmNative {
     toolchainDetection.set(false)
 }
@@ -104,19 +87,3 @@ graalvmNative {
 tasks.named<BootJar>("bootJar") {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
-
-/*
-tasks.named<Task>("bootDistTar") {
-    dependsOn(":fb2-support:shadowJar",":epub-support:shadowJar" )
-    doLast {
-        copy {
-//        bootInf {
-            from(project(":fb2-support").tasks.named("shadowJar"))
-            from(project(":epub-support").tasks.named("shadowJar"))
-            into("lib")
-            println("HERE")
-//        }
-        }
-    }
-}
-*/

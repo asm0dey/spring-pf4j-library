@@ -21,6 +21,46 @@ class SeaweedFSService(private val filerClient: FilerClient) {
     private val MAX_PREVIEW_HEIGHT = 300
 
     /**
+     * Saves a book description to SeaweedFS.
+     *
+     * @param bookId The ID of the book
+     * @param description The book description text
+     * @return true if the description was saved successfully, false otherwise
+     */
+    fun saveBookDescription(bookId: String, description: String): Boolean {
+        if (description.isEmpty()) {
+            return false
+        }
+
+        try {
+            SeaweedOutputStream(filerClient, "/descriptions/$bookId").use { outputStream ->
+                outputStream.write(description.toByteArray())
+            }
+            return true
+        } catch (e: Exception) {
+            logger.error("Error saving book description to SeaweedFS: ${e.message}", e)
+            return false
+        }
+    }
+
+    /**
+     * Retrieves a book description from SeaweedFS.
+     *
+     * @param bookId The ID of the book
+     * @return The description text, or null if not found
+     */
+    fun getBookDescription(bookId: String): String? {
+        try {
+            return SeaweedInputStream(filerClient, "/descriptions/$bookId").use { inputStream ->
+                String(inputStream.readAllBytes())
+            }
+        } catch (e: Exception) {
+            logger.warn("Error retrieving book description from SeaweedFS: ${e.message}")
+            return null
+        }
+    }
+
+    /**
      * Resizes an image to fit within the maximum dimensions while preserving aspect ratio.
      *
      * @param imageData The original image data
@@ -170,14 +210,14 @@ class SeaweedFSService(private val filerClient: FilerClient) {
      * @param bookId The ID of the book
      * @return The content type of the cover image, or "application/octet-stream" if not found
      */
-    fun getBookCoverContentType(bookId: String): String {
+    fun getBookCoverContentType(bookId: String): String? {
         try {
             return SeaweedInputStream(filerClient, "/covers/$bookId.metadata").use { inputStream ->
                 String(inputStream.readAllBytes())
             }
         } catch (e: Exception) {
-            logger.error("Error retrieving book cover content type from SeaweedFS: ${e.message}", e)
-            return "application/octet-stream"
+            logger.warn("Error retrieving book cover content type from SeaweedFS for book $bookId")
+            return null
         }
     }
 

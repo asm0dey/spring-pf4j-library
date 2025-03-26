@@ -3,7 +3,6 @@ package com.github.opdsko_spring.seaweedfs;
 import org.springframework.boot.docker.compose.core.RunningService;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionDetailsFactory;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionSource;
-import seaweedfs.client.FilerClient;
 
 import java.net.InetSocketAddress;
 
@@ -11,7 +10,7 @@ public class SeaweedFSDockerComposeConnectionDetailsFactory
         extends DockerComposeConnectionDetailsFactory<SeaweedFSConnectionDetails> {
 
     public SeaweedFSDockerComposeConnectionDetailsFactory() {
-        super("chrislusf/seaweedfs", FilerClient.class.getName());
+        super("chrislusf/seaweedfs", "seaweedfs.client.FilerClient");
     }
 
     @Override

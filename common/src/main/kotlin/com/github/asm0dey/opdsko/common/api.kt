@@ -19,36 +19,14 @@ interface DelegatingBookHandler : ExtensionPoint {
     fun getData(path: String, handlers: Collection<BookHandler>): InputStream
 }
 
-/**
- * Extension point for format converters.
- * Implementations of this interface can convert content from one format to another.
- */
 interface FormatConverter : ExtensionPoint {
-    /**
-     * The source format that this converter can handle.
-     */
     val sourceFormat: String
 
-    /**
-     * The target format that this converter can produce.
-     */
     val targetFormat: String
 
-    /**
-     * Checks if this converter can convert the given content.
-     *
-     * @param sourceFormat The format of the content to check.
-     * @return True if this converter can convert the content, false otherwise.
-     */
     fun canConvert(sourceFormat: String): Boolean
 
-    /**
-     * Converts the given input stream to the target format.
-     *
-     * @param inputStream The input stream to convert.
-     * @return The converted content as an input stream.
-     */
-    fun convert(inputStream: InputStream): InputStream
+    fun convert(inputStream: InputStream): File
 
 }
 
