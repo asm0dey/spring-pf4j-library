@@ -1,6 +1,5 @@
 package com.github.asm0dey.opdsko_spring.meilisearch;
 
-import com.meilisearch.sdk.Client;
 import org.springframework.boot.docker.compose.core.RunningService;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionDetailsFactory;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionSource;
@@ -12,7 +11,7 @@ public class MeilisearchDockerComposeConnectionDetailsFactory
         extends DockerComposeConnectionDetailsFactory<MeilisearchConnectionDetails> {
 
     public MeilisearchDockerComposeConnectionDetailsFactory() {
-        super("getmeili/meilisearch", Client.class.getName());
+        super("getmeili/meilisearch", "com.meilisearch.sdk.Client");
     }
 
     @Override

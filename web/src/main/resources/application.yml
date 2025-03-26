@@ -49,6 +49,7 @@ logging:
 scanner:
   sources:
     - /home/finkel/Books/
+    - /home/finkel/Downloads/f.fb2-183066-183652.zip
 
 meilisearch:
   host: 127.0.0.1

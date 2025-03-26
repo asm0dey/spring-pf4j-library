@@ -23,7 +23,7 @@ class BookRepo(
     private val bookMongoRepository: BookMongoRepository,
 ) {
 
-    suspend fun searchBookByText(searchTerm: String, page: Int): List<BookWithInfo> {
+    suspend fun searchBookByName(searchTerm: String, page: Int): List<Book> {
         val rawHits = meilisearch.index("books")
             .search(
                 SearchRequest(searchTerm)
@@ -48,7 +48,7 @@ class BookRepo(
         return bookMongoRepository.saveAll(toList.filterNot { it.path in existingBookPaths })
     }
 
-    suspend fun newBooks(page: Int): List<BookWithInfo> = bookMongoRepository
+    suspend fun newBooks(page: Int): List<Book> = bookMongoRepository
         .findAllBy(PageRequest.of(page, 50, Sort.by(Sort.Direction.DESC, "added")))
         .toList()
 }

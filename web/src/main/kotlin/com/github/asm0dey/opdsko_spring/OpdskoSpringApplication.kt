@@ -4,25 +4,14 @@ import com.mongodb.reactivestreams.client.MongoClient
 import io.mongock.driver.mongodb.reactive.driver.MongoReactiveDriver
 import io.mongock.runner.springboot.MongockSpringboot
 import io.mongock.runner.springboot.base.MongockApplicationRunner
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.toList
 import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.runApplication
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.io.ClassPathResource
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
-import org.springframework.stereotype.Component
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.buildAndAwait
-import org.springframework.web.reactive.function.server.coRouter
-import java.io.File
-import java.net.URI
 import java.time.LocalDateTime
 import java.util.*
 import javax.xml.namespace.QName
@@ -32,19 +21,11 @@ import kotlin.LazyThreadSafetyMode.PUBLICATION
 
 
 @SpringBootApplication
-//@EnableMongock
-//@ImportRuntimeHints(MyRuntimeHintsRegistrar::class)
 class OpdskoSpringApplication
 
 fun main(args: Array<String>) {
     runApplication<OpdskoSpringApplication>(*args)
 }
-
-
-@Suppress("ArrayInDataClass")
-@Configuration
-@ConfigurationProperties(prefix = "scanner")
-data class ScannerSettings(var sources: Array<File> = arrayOf())
 
 @Configuration
 class MongockConfig() {
@@ -65,132 +46,6 @@ class MongockConfig() {
             .setTransactional(false)
             .setTrackIgnored(false)
             .buildApplicationRunner()
-    }
-}
-
-@Configuration
-class RoutingConfig {
-
-    @Bean
-    fun router(htmxHandler: HtmxHandler, scanner: Scanner) = coRouter {
-        GET("/") { ServerResponse.permanentRedirect(URI("/api")).buildAndAwait() }
-        resources("/**", ClassPathResource("static/"))
-        GET("/api").nest {
-            GET("", htmxHandler::homePage)
-            GET("/search", htmxHandler::search)
-            GET("/new/{page}", htmxHandler::new)
-
-            // Author navigation routes
-            GET("/author", htmxHandler::authorFirstLevel)
-            GET("/author/{prefix}", htmxHandler::authorPrefixLevel)
-            GET("/author/view/{fullName}", htmxHandler::authorView)
-            GET("/author/view/{fullName}/series", htmxHandler::authorSeries)
-            GET("/author/view/{fullName}/series/{series}", htmxHandler::authorSeriesBooks)
-            GET("/author/view/{fullName}/noseries", htmxHandler::authorNoSeriesBooks)
-            GET("/author/view/{fullName}/all", htmxHandler::authorAllBooks)
-            GET("/series/{series}", htmxHandler::seriesBooks)
-        }
-        GET("/opds/book/{id}/download", htmxHandler::downloadBook)
-        GET("/opds/book/{id}/download/{format}", htmxHandler::downloadBook)
-        GET("/opds/image/{id}", htmxHandler::getBookCover)
-        GET("/opds/fullimage/{id}", htmxHandler::getFullBookCover)
-        GET("/api/book/{id}/image", htmxHandler::getFullBookCover)
-        GET("/api/book/{id}/info", htmxHandler::getBookInfo)
-        POST("/scan", scanner::scan)
-        POST("/cleanup", scanner::cleanup)
-    }
-}
-
-@Component
-class Scanner(
-    val settings: ScannerSettings,
-    private val bookRepo: BookRepo,
-    private val bookService: BookService,
-    private val meilisearch: Meilisearch,
-    private val seaweedFSService: SeaweedFSService,
-    private val bookMongoRepository: BookMongoRepository,
-) {
-    suspend fun scan(request: ServerRequest): ServerResponse {
-        val processedBookChunks = settings
-            .sources
-            .asSequence()
-            .flatMap {
-                if (it.isDirectory) {
-                    it.walkTopDown()
-                        .filter { it.isFile }
-                        .flatMap { bookService.obtainBooks(it.absolutePath) }
-                } else {
-                    // Process individual file
-                    bookService.obtainBooks(it.absolutePath)
-                }
-            }
-            .map { (commonBook, size) ->
-                Book(
-                    authors = commonBook.authors.map {
-                        Author(
-                            lastName = it.lastName ?: "",
-                            firstName = it.firstName ?: "",
-                            fullName = it.fullName(),
-                            middleName = it.middleName,
-                            nickname = it.nickname,
-                        )
-                    },
-                    genres = commonBook.genres,
-                    sequence = commonBook.sequenceName,
-                    sequenceNumber = commonBook.sequenceNumber,
-                    name = commonBook.title,
-                    size = size,
-                    path = commonBook.path,
-                    hasCover = commonBook.cover != null
-                )
-            }
-            .chunked(1000)
-        for (file in settings.sources) {
-            for (processedBookChunk in processedBookChunks) {
-                if (processedBookChunk.isNotEmpty()) {
-                    val savedBooksFlow = bookRepo.save(processedBookChunk)
-                    val savedBooks = savedBooksFlow.toList()
-
-                    val bookIndexItems = savedBooks.map { BookIndexItem(it.path, it.name) }
-                    meilisearch.saveBooks(bookIndexItems)
-                }
-
-            }
-        }
-        return ServerResponse.ok().buildAndAwait()
-    }
-
-    /**
-     * Cleans up books that are no longer available in the sources.
-     * For each source, scans it and removes books if they are not available anymore.
-     * Uses book handlers and delegate book handlers to determine if books still exist.
-     *
-     * @param request The server request
-     * @return The server response
-     */
-    suspend fun cleanup(request: ServerRequest): ServerResponse {
-        // Get all books from the database
-        val allBooks = bookMongoRepository.findAll()
-
-        val booksToRemove = allBooks
-            .filter { !bookService.bookExists(it.path) }
-            .toList()
-
-        // Remove books that no longer exist
-        if (booksToRemove.isNotEmpty()) {
-            // Delete from MongoDB
-            bookMongoRepository.deleteAll(booksToRemove)
-
-            // Delete from Meilisearch
-            meilisearch.deleteBooks(booksToRemove.map { it.id })
-
-            // Delete book covers from SeaweedFS
-            for (book in booksToRemove) {
-                seaweedFSService.deleteBookCover(book.id)
-            }
-        }
-
-        return ServerResponse.ok().buildAndAwait()
     }
 }
 
@@ -233,8 +88,6 @@ val genreNames by lazy(PUBLICATION) {
 
 }
 
-typealias BookWithInfo = Book
-
 @Document
 data class Book(
     val authors: List<Author>,
@@ -245,7 +98,7 @@ data class Book(
     val added: LocalDateTime = LocalDateTime.now(),
     val size: Long,
     @Indexed(unique = true) val path: String,
-    @Id val id: String = UUID.randomUUID().toString(),
+    @Id val id: String = UUID.nameUUIDFromBytes(path.toByteArray()).toString(),
     val hasCover: Boolean = true
 )
 

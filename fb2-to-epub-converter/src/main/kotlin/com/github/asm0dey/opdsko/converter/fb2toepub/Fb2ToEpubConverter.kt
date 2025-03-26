@@ -2,6 +2,7 @@ package com.github.asm0dey.opdsko.converter.fb2toepub
 
 import com.github.asm0dey.opdsko.common.FormatConverter
 import org.pf4j.Extension
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import kotlin.io.path.createTempDirectory
@@ -16,7 +17,7 @@ class Fb2ToEpubConverter : FormatConverter {
         return sourceFormat.equals("fb2", ignoreCase = true) && Fb2ToEpubConverterPlugin.epubConverterAccessible
     }
 
-    override fun convert(inputStream: InputStream): InputStream {
+    override fun convert(inputStream: InputStream): File {
         if (!canConvert(sourceFormat)) {
             throw IllegalArgumentException("Cannot convert from $sourceFormat to $targetFormat")
         }
@@ -50,9 +51,7 @@ class Fb2ToEpubConverter : FormatConverter {
                 throw IOException("Conversion failed with exit code $exitCode: $errorOutput")
             }
 
-            // Return the output file as a stream
-            tempOutputFile = tempOutputFile.resolve(tempInputFile.nameWithoutExtension + ".epub")
-            return tempOutputFile.inputStream()
+            return tempOutputFile.resolve(tempInputFile.nameWithoutExtension + ".epub")
         } catch (e: Exception) {
             // Clean up temporary files in case of error
             tempInputFile.delete()

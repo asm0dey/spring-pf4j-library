@@ -4,10 +4,19 @@ import com.github.asm0dey.opdsko.common.BookHandler
 import com.github.asm0dey.opdsko.common.DelegatingBookHandler
 import com.github.asm0dey.opdsko.common.FormatConverter
 import org.springframework.context.annotation.DependsOn
+import org.springframework.core.io.FileSystemResource
+import org.springframework.core.io.InputStreamResource
 import org.springframework.data.domain.Sort
+import org.springframework.http.ContentDisposition
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.server.ServerResponse
+import org.springframework.web.reactive.function.server.bodyValueAndAwait
+import org.springframework.web.reactive.function.server.buildAndAwait
 import java.io.File
 import java.io.InputStream
+import java.nio.charset.Charset
 import java.text.StringCharacterIterator
 import kotlin.math.abs
 import kotlin.math.sign
@@ -20,13 +29,35 @@ class BookService(
     val delegates: List<DelegatingBookHandler>,
     val bookMongoRepository: BookMongoRepository,
     val formatConverters: List<FormatConverter>,
-    val bookRepo: BookRepo
+    val bookRepo: BookRepo,
+    val seaweedFSService: SeaweedFSService
 ) {
-    fun imageTypes(books: List<BookWithInfo>) = books
-        .map { Pair(it.id, it.path) }
-        .associate { (id, path) ->
-            val fb = obtainBook(path)
-            val type = fb?.coverContentType
+    /**
+     * Gets the cover content types for a list of books.
+     * If available, retrieves the content type from SeaweedFS.
+     * If not available in SeaweedFS, retrieves it from the book and saves it to SeaweedFS.
+     *
+     * @param books The list of books
+     * @param seaweedFSService The SeaweedFS service to use
+     * @return A map of book IDs to cover content types
+     */
+    fun imageTypes(books: List<Book>) = books
+        .map { Pair(it.id, it) }
+        .associate { (id, book) ->
+            if (!book.hasCover) return@associate id to null
+            var type = try {
+                seaweedFSService.getBookCoverContentType(id)
+            } catch (e: Exception) {
+                null
+            }
+            if (type == null || type == "application/octet-stream") {
+                val fb = obtainBook(book.path)
+                if (fb?.cover != null && fb.coverContentType != null) {
+                    seaweedFSService.saveBookCover(id, fb.cover!!, fb.coverContentType!!)
+                    type = fb.coverContentType
+                }
+            }
+
             id to type
         }
 
@@ -75,23 +106,41 @@ class BookService(
         return String.format("%.1f %ciB", value / 1024.0, ci.current())
     }
 
-    fun shortDescriptions(bookWithInfos: List<BookWithInfo>) =
+    /**
+     * Gets short descriptions for a list of books.
+     * If available, retrieves the description from SeaweedFS.
+     * If not available in SeaweedFS, generates it from the book and saves it to SeaweedFS.
+     *
+     * @param bookWithInfos The list of books
+     * @return A map of book IDs to short descriptions
+     */
+    fun shortDescriptions(bookWithInfos: List<Book>) =
         bookWithInfos.map { it.id to it }
             .associate { (id, book) ->
-                val size = book.size.humanReadable()
-                val seq = book.sequence
-                val seqNo = book.sequenceNumber
+                // First try to get the description from SeaweedFS
+                var text = seaweedFSService.getBookDescription(id)
 
-                val fb = obtainBook(book.path)
+                // If not available in SeaweedFS, generate it and save it
+                if (text == null) {
+                    val size = book.size.humanReadable()
+                    val seq = book.sequence
+                    val seqNo = book.sequenceNumber
 
-                val descr = fb?.annotation ?: ""
-                val text = buildString {
-                    append("Size: $size.\n ")
-                    seq?.let { append("Series: $it") }
-                    seqNo?.let { append("#${it.toString().padStart(3, '0')}") }
-                    seq?.let { append(".\n ") }
-                    append(descr)
+                    val fb = obtainBook(book.path)
+
+                    val descr = fb?.annotation ?: ""
+                    text = buildString {
+                        append("Size: $size.\n ")
+                        seq?.let { append("Series: $it") }
+                        seqNo?.let { append("#${it.toString().padStart(3, '0')}") }
+                        seq?.let { append(".\n ") }
+                        append(descr)
+                    }
+
+                    // Save the description to SeaweedFS for future use
+                    seaweedFSService.saveBookDescription(id, text)
                 }
+
                 id to text
             }
 
@@ -112,188 +161,230 @@ class BookService(
         }
     }
 
-    fun convertBook(path: String, targetFormat: String): InputStream? {
-        // Get the source format from the path
+    fun convertBook(path: String, targetFormat: String): File? {
         val sourceFormat = path.substringAfterLast('.')
-
-        // Find a suitable converter
         val converter = formatConverters.firstOrNull {
             it.sourceFormat.equals(sourceFormat, ignoreCase = true) &&
                     it.targetFormat.equals(targetFormat, ignoreCase = true)
         } ?: return null
-
-        // Check if the converter can handle this format
-        if (!converter.canConvert(sourceFormat)) {
-            return null
-        }
-
-        // Get the book data as a stream and convert it
+        if (!converter.canConvert(sourceFormat)) return null
         return getBookData(path).use { converter.convert(it) }
     }
 
-    /**
-     * Checks if a book exists at the given path using book handlers.
-     *
-     * @param path The path to check
-     * @return true if a book exists at the path, false otherwise
-     */
     fun bookExists(path: String): Boolean {
-        // First check if the file exists
         val file = File(path)
-        if (!file.exists()) {
-            return false
-        }
+        if (!file.exists()) return false
 
-        // Then try to obtain the book using handlers
         return try {
-            // Check if any delegate handler supports this path
             val delegateSupports = delegates.any { it.supportsPath(path) }
-
-            // If a delegate supports it, try to obtain the book
-            if (delegateSupports) {
-                delegates.firstOrNull { it.supportsPath(path) }
-                    ?.obtainBook(path, bookHandlers) != null
-            } else {
-                // Otherwise, check if any book handler supports this file
+            if (delegateSupports) delegates.firstOrNull { it.supportsPath(path) }
+                ?.obtainBook(path, bookHandlers) != null
+            else {
                 val dataExtractor = { file.inputStream() }
                 bookHandlers.firstOrNull { it.supportsFile(path, dataExtractor) }
                     ?.bookInfo(path, dataExtractor) != null
             }
         } catch (e: Exception) {
-            // If an exception occurs, the book doesn't exist or is corrupted
             false
         }
     }
 
-    /**
-     * Searches for books by text.
-     *
-     * @param searchTerm The search term
-     * @param page The page number (0-based)
-     * @return A list of books matching the search term
-     */
-    suspend fun searchBookByText(searchTerm: String, page: Int): List<BookWithInfo> {
-        return bookRepo.searchBookByText(searchTerm, page)
-    }
+    suspend fun searchBookByName(searchTerm: String, page: Int): List<Book> =
+        bookRepo.searchBookByName(searchTerm, page)
 
-    /**
-     * Gets new books.
-     *
-     * @param page The page number (0-based)
-     * @return A list of new books
-     */
-    suspend fun newBooks(page: Int): List<BookWithInfo> {
-        return bookRepo.newBooks(page)
-    }
+    suspend fun newBooks(page: Int): List<Book> = bookRepo.newBooks(page)
 
-    /**
-     * Finds author first letters.
-     *
-     * @return A flow of author letter results
-     */
     suspend fun findAuthorFirstLetters() = bookMongoRepository.findAuthorFirstLetters()
 
-    /**
-     * Counts exact last names.
-     *
-     * @param prefix The prefix to match
-     * @return A flow of count results
-     */
     suspend fun countExactLastNames(prefix: String) = bookMongoRepository.countExactLastNames(prefix)
 
-    /**
-     * Finds author prefixes.
-     *
-     * @param prefix The prefix to match
-     * @param prefixLength The length of the prefix
-     * @return A flow of author letter results
-     */
     suspend fun findAuthorPrefixes(prefix: String, prefixLength: Int) =
         bookMongoRepository.findAuthorPrefixes(prefix, prefixLength)
 
-    /**
-     * Finds authors by prefix.
-     *
-     * @param prefix The prefix to match
-     * @return A flow of author results
-     */
     suspend fun findAuthorsByPrefix(prefix: String) = bookMongoRepository.findAuthorsByPrefix(prefix)
 
-    /**
-     * Finds series by author.
-     *
-     * @param lastName The author's last name
-     * @param firstName The author's first name
-     * @return A flow of series results
-     */
-    suspend fun findSeriesByAuthor(lastName: String, firstName: String) =
-        bookMongoRepository.findSeriesByAuthor(lastName, firstName)
-
-    /**
-     * Finds series by author using full name.
-     *
-     * @param fullName The author's full name
-     * @return A flow of series results
-     */
     suspend fun findSeriesByAuthorFullName(fullName: String) =
         bookMongoRepository.findSeriesByAuthorFullName(fullName)
 
-    /**
-     * Finds books by series.
-     *
-     * @param series The series name
-     * @param sort The sort order
-     * @return A flow of books
-     */
     suspend fun findBooksBySeries(series: String, sort: Sort) = bookMongoRepository.findBooksBySeries(series, sort)
 
-    /**
-     * Finds books by author without series.
-     *
-     * @param lastName The author's last name
-     * @param firstName The author's first name
-     * @param sort The sort order
-     * @return A flow of books
-     */
-    suspend fun findBooksByAuthorWithoutSeries(lastName: String, firstName: String, sort: Sort) =
-        bookMongoRepository.findBooksByAuthorWithoutSeries(lastName, firstName, sort)
-
-    /**
-     * Finds books by author without series using full name.
-     *
-     * @param fullName The author's full name
-     * @param sort The sort order
-     * @return A flow of books
-     */
     suspend fun findBooksByAuthorWithoutSeriesFullName(fullName: String, sort: Sort) =
         bookMongoRepository.findBooksByAuthorWithoutSeriesFullName(fullName, sort)
 
-    /**
-     * Finds books by author.
-     *
-     * @param lastName The author's last name
-     * @param firstName The author's first name
-     * @param sort The sort order
-     * @return A flow of books
-     */
-    suspend fun findBooksByAuthor(lastName: String, firstName: String, sort: Sort) =
-        bookMongoRepository.findBooksByAuthor(lastName, firstName, sort)
-
-    /**
-     * Finds books by author using full name.
-     *
-     * @param fullName The author's full name
-     * @param sort The sort order
-     * @return A flow of books
-     */
     suspend fun findBooksByAuthorFullName(fullName: String, sort: Sort) =
         bookMongoRepository.findBooksByAuthorFullName(fullName, sort)
 
-    /**
-     * Saves a book.
-     *
-     * @param book The book to save
-     * @return The saved book
-     */
     suspend fun saveBook(book: Book) = bookMongoRepository.save(book)
+
+    fun generateFileName(book: Book, extension: String): String {
+        val baseFileName = buildString {
+            append(book.name.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
+
+            if (book.sequence != null) {
+                append(" [")
+                append(book.sequence.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
+
+                if (book.sequenceNumber != null) {
+                    append(" #")
+                    append(book.sequenceNumber)
+                }
+
+                append("]")
+            }
+        }
+
+        return "$baseFileName.$extension"
+    }
+
+    fun getContentTypeForExtension(extension: String): String {
+        return when (extension.lowercase()) {
+            "epub" -> "application/epub+zip"
+            "fb2" -> "application/x-fictionbook+xml"
+            "pdf" -> "application/pdf"
+            "mobi" -> "application/x-mobipocket-ebook"
+            "txt" -> "text/plain"
+            else -> "application/octet-stream"
+        }
+    }
+
+    /**
+     * Serves a book cover preview image from SeaweedFS or retrieves it from the book on demand.
+     * If the cover is not in SeaweedFS, it retrieves it from the book and caches it to SeaweedFS.
+     * If the book doesn't have a cover, it returns a 404 Not Found response.
+     *
+     * @param bookId The ID of the book
+     * @param seaweedFSService The SeaweedFS service to use for retrieving and caching covers
+     * @return The server response with the preview image data
+     */
+    suspend fun getBookCover(bookId: String, seaweedFSService: SeaweedFSService): ServerResponse {
+        val book = getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+
+        if (!book.hasCover) return ServerResponse.notFound().buildAndAwait()
+
+        var coverInputStream = seaweedFSService.getBookCoverPreview(bookId)
+        val contentType: String
+
+        if (coverInputStream == null) {
+            // Try to get the original cover (the preview might not exist yet)
+            coverInputStream = seaweedFSService.getBookCover(bookId)
+
+            if (coverInputStream == null) {
+                // If we can't find the cover in SeaweedFS, let's try to get it from the book itself
+                // Cover not found in SeaweedFS, retrieve it from the book
+                val commonBook = obtainBook(book.path) ?: return ServerResponse.notFound().buildAndAwait()
+
+                // Check if the book has a cover
+                if (commonBook.cover == null || commonBook.coverContentType == null) {
+                    // Update the book in the database to reflect that it doesn't have a cover
+                    // This is a case where the hasCover flag was true but the book actually doesn't have a cover
+                    val updatedBook = book.copy(hasCover = false)
+                    saveBook(updatedBook)
+                    return ServerResponse.notFound().buildAndAwait()
+                }
+
+                // Cache the cover to SeaweedFS (this will also create and cache the preview)
+                seaweedFSService.saveBookCover(bookId, commonBook.cover!!, commonBook.coverContentType!!)
+
+                // Get the newly cached cover preview from SeaweedFS
+                coverInputStream = seaweedFSService.getBookCoverPreview(bookId)
+                    ?: return ServerResponse.notFound().buildAndAwait()
+
+                contentType = commonBook.coverContentType!!
+            } else {
+                // We found the original cover but not the preview, so we'll use the original
+                // Get the content type of the cover image from SeaweedFS
+                contentType = seaweedFSService.getBookCoverContentType(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+            }
+        } else {
+            // Get the content type of the cover preview image from SeaweedFS
+            contentType = seaweedFSService.getBookCoverPreviewContentType(bookId)
+        }
+
+        // Create an InputStreamResource with the cover image data
+        val inputStreamResource = InputStreamResource(coverInputStream)
+
+        return ServerResponse.ok()
+            .contentType(MediaType.parseMediaType(contentType))
+            .bodyValueAndAwait(inputStreamResource)
+    }
+
+    suspend fun downloadBook(bookId: String, targetFormat: String? = null): ServerResponse {
+        val book = getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+        val originalExtension = book.path.substringAfterLast('.')
+
+        if (targetFormat != null) {
+            val convertedFile = convertBook(book.path, targetFormat)
+                ?: return ServerResponse.badRequest().bodyValueAndAwait("Conversion to $targetFormat not supported")
+
+            val fileName = generateFileName(book, targetFormat)
+            val contentType = getContentTypeForExtension(targetFormat)
+
+            val headers = HttpHeaders().apply {
+                contentDisposition = ContentDisposition.attachment()
+                    .filename(fileName, Charset.forName("UTF-8"))
+                    .build()
+            }
+
+            return ServerResponse.ok()
+                .headers { it.addAll(headers) }
+                .contentType(MediaType.parseMediaType(contentType))
+                .bodyValueAndAwait(FileSystemResource(convertedFile))
+                .also { convertedFile.parentFile.deleteRecursively() }
+        }
+
+        val fileName = generateFileName(book, originalExtension)
+        val contentType = getContentTypeForExtension(originalExtension)
+
+        val headers = HttpHeaders().apply {
+            contentDisposition = ContentDisposition.attachment()
+                .filename(fileName, Charset.forName("UTF-8"))
+                .build()
+        }
+
+        val bookData = InputStreamResource(getBookData(book.path))
+        return ServerResponse.ok()
+            .headers { it.addAll(headers) }
+            .contentType(MediaType.parseMediaType(contentType))
+            .bodyValueAndAwait(bookData)
+            .also { bookData.inputStream.close() }
+    }
+
+    /**
+     * Serves a full-size book cover image.
+     *
+     * @param bookId The ID of the book
+     * @param seaweedFSService The SeaweedFS service to use for retrieving covers
+     * @return The server response with the full-size image data
+     */
+    suspend fun getFullBookCover(bookId: String, seaweedFSService: SeaweedFSService): ServerResponse {
+        val book = getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+        if (!book.hasCover) return ServerResponse.notFound().buildAndAwait()
+        val coverInputStream = seaweedFSService.getBookCover(bookId)
+        val contentType: String
+
+        if (coverInputStream == null) {
+            val commonBook = obtainBook(book.path) ?: return ServerResponse.notFound().buildAndAwait()
+            if (commonBook.cover == null || commonBook.coverContentType == null) {
+                val updatedBook = book.copy(hasCover = false)
+                saveBook(updatedBook)
+                return ServerResponse.notFound().buildAndAwait()
+            }
+            seaweedFSService.saveBookCover(bookId, commonBook.cover!!, commonBook.coverContentType!!)
+            val newCoverInputStream = seaweedFSService.getBookCover(bookId)
+                ?: return ServerResponse.notFound().buildAndAwait()
+            val inputStreamResource = InputStreamResource(newCoverInputStream)
+
+            return ServerResponse.ok()
+                .contentType(MediaType.parseMediaType(commonBook.coverContentType!!))
+                .bodyValueAndAwait(inputStreamResource)
+                .also { newCoverInputStream.close() }
+        } else {
+            contentType = seaweedFSService.getBookCoverContentType(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+            val inputStreamResource = InputStreamResource(coverInputStream)
+            return ServerResponse.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .bodyValueAndAwait(inputStreamResource)
+                .also { coverInputStream.close() }
+        }
+    }
 }
