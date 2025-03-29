@@ -130,6 +130,7 @@ class HtmxHandler(
                                 attributes["hx-get"] = "/api"
                                 attributes["hx-swap"] = "innerHTML show:.input:top"
                                 attributes["hx-target"] = "#layout"
+                                attributes["hx-indicator"] = "#loader"
                                 img(alt = "Logo", src = "/logo.png")
                                 +Entities.nbsp
                                 +"Asm0dey's library"
@@ -148,6 +149,7 @@ class HtmxHandler(
                                     attributes["hx-get"] = "/api/search"
                                     attributes["hx-swap"] = "innerHTML show:.input:top"
                                     attributes["hx-target"] = "#layout"
+                                    attributes["hx-indicator"] = "#loader"
                                 }
                                 span("icon is-small is-left") {
                                     i("fa fa-search")
@@ -159,6 +161,7 @@ class HtmxHandler(
                                     attributes["hx-get"] = "/api/search"
                                     attributes["hx-swap"] = "innerHTML show:.input:top"
                                     attributes["hx-target"] = "#layout"
+                                    attributes["hx-indicator"] = "#loader"
                                     +"Search"
                                 }
                             }
@@ -168,6 +171,14 @@ class HtmxHandler(
                         attributes["aria-label"] = "breadcrumbs"
                         unsafe {
                             +breadcrumbs
+                        }
+                    }
+                    div {
+                        id = "loader"
+                        classes = setOf("htmx-indicator")
+                        style = "text-align: center; padding: 20px;"
+                        div("loader is-loading") {
+                            style = "height: 80px; width: 80px; margin: 0 auto;"
                         }
                     }
                     div("fixed-grid column has-3-cols has-1-cols-mobile") {
@@ -309,6 +320,7 @@ class HtmxHandler(
                         attributes["hx-swap"] = "innerHTML show:.input:top"
                         attributes["hx-target"] = "#layout"
                         attributes["hx-push-url"] = "true"
+                        attributes["hx-indicator"] = "#loader"
                     }
                     +"Previous page"
                 }
@@ -320,6 +332,7 @@ class HtmxHandler(
                         attributes["hx-swap"] = "innerHTML show:.input:top"
                         attributes["hx-target"] = "#layout"
                         attributes["hx-push-url"] = "true"
+                        attributes["hx-indicator"] = "#loader"
                     }
                     +"Next page"
                 }
@@ -351,6 +364,7 @@ class HtmxHandler(
                                         attributes["hx-swap"] = "innerHTML show:.input:top"
                                         attributes["hx-target"] = "#layout"
                                         attributes["hx-push-url"] = "true"
+                                        attributes["hx-indicator"] = "#loader"
                                         +(page.toString())
                                     }
                                 }
@@ -378,6 +392,7 @@ class HtmxHandler(
                         attributes["hx-swap"] = "innerHTML show:.input:top"
                         attributes["hx-target"] = "#layout"
                         attributes["hx-push-url"] = "true"
+                        attributes["hx-indicator"] = "#loader"
                     }
                     +"Previous page"
                 }
@@ -389,6 +404,7 @@ class HtmxHandler(
                         attributes["hx-swap"] = "innerHTML show:.input:top"
                         attributes["hx-target"] = "#layout"
                         attributes["hx-push-url"] = "true"
+                        attributes["hx-indicator"] = "#loader"
                     }
                     +"Next page"
                 }
@@ -420,6 +436,7 @@ class HtmxHandler(
         attributes["hx-swap"] = "innerHTML show:.input:top"
         attributes["hx-target"] = "#layout"
         attributes["hx-push-url"] = "true"
+        attributes["hx-indicator"] = "#loader"
     }
 
     /**
