@@ -37,7 +37,8 @@ class HtmxHandler(
     }
 
     suspend fun search(req: ServerRequest): ServerResponse {
-        val page = req.queryParamOrNull("page")?.toIntOrNull()?.minus(1) ?: 0
+        val pageParam = req.queryParamOrNull("page")?.toIntOrNull() ?: 1
+        val page = pageParam - 1 // Convert to 0-based for repository
         val searchTerm = req.queryParam("search").getOrNull()!!
         val books = bookService.searchBookByName(searchTerm, page)
         val imageTypes = bookService.imageTypes(books)
@@ -53,7 +54,10 @@ class HtmxHandler(
                 "Search: $searchTerm" to "/api/search?search=$searchTerm",
             )
         )
-        return ok(smartHtml(req, x, y))
+        // Assume there are more items if we have a full page of results
+        val hasMoreItems = books.size == 15
+        val pagination = IndeterminatePagination(pageParam, hasMoreItems, "/api/search?search=$searchTerm")
+        return ok(smartHtml(req, x, y, pagination))
     }
 
     suspend fun new(req: ServerRequest): ServerResponse {
@@ -61,7 +65,6 @@ class HtmxHandler(
         val page = pageParam - 1 // Convert to 0-based for repository
         val pagedBooks = bookService.newBooks(page)
         val books = pagedBooks.books
-        val total = pagedBooks.total
         val imageTypes = bookService.imageTypes(books)
         val shortDescriptions = bookService.shortDescriptions(books)
         val x = createHTML(false).div("grid") {
@@ -75,7 +78,9 @@ class HtmxHandler(
                 "New" to "/api/new",
             )
         )
-        val pagination = Pagination(pageParam, total.toInt(), "/api/new")
+        // Assume there are more items if we have a full page of results
+        val hasMoreItems = books.size >= 24
+        val pagination = IndeterminatePagination(pageParam, hasMoreItems, "/api/new")
         return ok(smartHtml(req, x, y, pagination))
     }
 
@@ -289,9 +294,9 @@ class HtmxHandler(
     @Suppress("FunctionName")
     private fun Pagination(curPage: Int, total: Int, base: String) = createHTML(false).div {
         fun String.withParam(param: String) = if (URI(this).query == null) "${this}?$param" else "${this}&$param"
-        val last = total / 50 + 1
+        val last = total / 15 + 1
         attributes["hx-swap-oob"] = "innerHTML:.navv"
-        if (curPage == 1 && total / 50 + 1 == 1) div()
+        if (curPage == 1 && total / 15 + 1 == 1) div()
         else
             nav {
                 classes = setOf("pagination", "is-centered")
@@ -352,6 +357,40 @@ class HtmxHandler(
                             }
                         }
                     }
+                }
+            }
+    }
+
+    @Suppress("FunctionName")
+    private fun IndeterminatePagination(curPage: Int, hasMoreItems: Boolean, base: String) = createHTML(false).div {
+        fun String.withParam(param: String) = if (URI(this).query == null) "${this}?$param" else "${this}&$param"
+        attributes["hx-swap-oob"] = "innerHTML:.navv"
+        if (curPage == 1 && !hasMoreItems) div()
+        else
+            nav {
+                classes = setOf("pagination", "is-centered")
+                role = "navigation"
+                a {
+                    classes = setOfNotNull("pagination-previous", if (curPage == 1) "is-disabled" else null)
+                    if (curPage != 1) {
+                        attributes["hx-trigger"] = "click"
+                        attributes["hx-get"] = base.withParam("page=${curPage - 1}")
+                        attributes["hx-swap"] = "innerHTML show:.input:top"
+                        attributes["hx-target"] = "#layout"
+                        attributes["hx-push-url"] = "true"
+                    }
+                    +"Previous page"
+                }
+                a {
+                    classes = setOfNotNull("pagination-next", if (!hasMoreItems) "is-disabled" else null)
+                    if (hasMoreItems) {
+                        attributes["hx-trigger"] = "click"
+                        attributes["hx-get"] = base.withParam("page=${curPage + 1}")
+                        attributes["hx-swap"] = "innerHTML show:.input:top"
+                        attributes["hx-target"] = "#layout"
+                        attributes["hx-push-url"] = "true"
+                    }
+                    +"Next page"
                 }
             }
     }
