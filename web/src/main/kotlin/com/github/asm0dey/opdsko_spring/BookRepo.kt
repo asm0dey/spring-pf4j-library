@@ -43,9 +43,9 @@ class BookRepo(
     }
 
     @Transactional
-    suspend fun save(toList: List<Book>): Flow<Book> {
+    suspend fun save(toList: List<Book>): List<Book> {
         val existingBookPaths = bookMongoRepository.findAllByPathIn(toList.map(Book::path)).map { it.path }.toSet()
-        return bookMongoRepository.saveAll(toList.filterNot { it.path in existingBookPaths })
+        return bookMongoRepository.saveAll(toList.filterNot { it.path in existingBookPaths }).toList()
     }
 
     suspend fun newBooks(page: Int): List<Book> = bookMongoRepository

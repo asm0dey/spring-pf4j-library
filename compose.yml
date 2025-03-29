@@ -1,13 +1,16 @@
 services:
   postgres:
-    image: ghcr.io/ferretdb/postgres-documentdb:16
+    image: ghcr.io/ferretdb/postgres-documentdb:17
     restart: on-failure
-    ports:
-      - 5433:5432
+#    ports:
+#      - 5433:5432
     environment:
-      - POSTGRES_USER=username
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASS}
       - POSTGRES_DB=postgres
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data/pgdata
 
   ferretdb:
     image: ghcr.io/ferretdb/ferretdb:2
@@ -15,26 +18,28 @@ services:
     ports:
       - 27017:27017
     environment:
-      - FERRETDB_POSTGRESQL_URL=postgres://username:password@postgres:5432/postgres
-      - MONGODB_ROOT_USERNAME=username
-      - MONGODB_ROOT_PASSWORD=password
+      - FERRETDB_POSTGRESQL_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASS}@postgres:5432/postgres
+      - MONGODB_ROOT_USERNAME=${POSTGRES_USER}
+      - MONGODB_ROOT_PASSWORD=${POSTGRES_PASS}
     labels:
       org.springframework.boot.service-connection: mongo
 
   meilisearch:
     image: getmeili/meilisearch:latest
     environment:
-      MEILI_MASTER_KEY: random_master_key_12345
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
     ports:
       - "7700:7700"
+    volumes:
+      - "./data/meilisearch:/meili_data"
 
   seaweedfs:
     image: chrislusf/seaweedfs
     restart: on-failure
     ports:
-      - "9333:9333"  # master port
-      - "8888:8888"  # filer port
-      - "18888:18888"  # filer grpc port
+      - "9333:9333"
+      - "8888:8888"
+      - "18888:18888"
     command: "server -master -filer -ip.bind=0.0.0.0"
     volumes:
-      - ./seaweedfs-data:/data
+      - ./data/seaweedfs:/data

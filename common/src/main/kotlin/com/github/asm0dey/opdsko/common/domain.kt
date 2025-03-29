@@ -17,7 +17,7 @@ interface Author {
     val lastName: String?
     val middleName: String?
     val nickname: String?
-    fun fullName(): String = buildString {
+    fun computeFullName(): String = buildString {
         if (lastName != null) append(lastName)
         val hasLastName = lastName != null
         if (firstName != null) {
@@ -47,15 +47,15 @@ class AuthorAdapter(
 ) : Author
 
 fun main() {
-    println(AuthorAdapter(lastName = "Fin").fullName())
-    println(AuthorAdapter(firstName = "Pas").fullName())
-    println(AuthorAdapter(middleName = "Mik").fullName())
-    println(AuthorAdapter(nickname = "asm0dey").fullName())
-    println(AuthorAdapter(lastName = "Fin", nickname = "asm0dey").fullName())
-    println(AuthorAdapter(firstName = "Pas", nickname = "asm0dey").fullName())
-    println(AuthorAdapter(middleName = "Mik", nickname = "asm0dey").fullName())
-    println(AuthorAdapter(lastName = "Fin", middleName = "Mik", firstName = "Pas").fullName())
-    println(AuthorAdapter(lastName = "Fin", middleName = "Mik", firstName = "Pas", nickname = "asm0dey").fullName())
-    println(AuthorAdapter(lastName = "Fin", firstName = "Pas").fullName())
-    println(AuthorAdapter(lastName = "Fin", firstName = "Pas Mik").fullName())
+    println(AuthorAdapter(lastName = "Fin").computeFullName())
+    println(AuthorAdapter(firstName = "Pas").computeFullName())
+    println(AuthorAdapter(middleName = "Mik").computeFullName())
+    println(AuthorAdapter(nickname = "asm0dey").computeFullName())
+    println(AuthorAdapter(lastName = "Fin", nickname = "asm0dey").computeFullName())
+    println(AuthorAdapter(firstName = "Pas", nickname = "asm0dey").computeFullName())
+    println(AuthorAdapter(middleName = "Mik", nickname = "asm0dey").computeFullName())
+    println(AuthorAdapter(lastName = "Fin", middleName = "Mik", firstName = "Pas").computeFullName())
+    println(AuthorAdapter(lastName = "Fin", middleName = "Mik", firstName = "Pas", nickname = "asm0dey").computeFullName())
+    println(AuthorAdapter(lastName = "Fin", firstName = "Pas").computeFullName())
+    println(AuthorAdapter(lastName = "Fin", firstName = "Pas Mik").computeFullName())
 }

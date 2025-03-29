@@ -52,27 +52,12 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
     )
     fun findAuthorsByPrefix(prefix: String): Flow<AuthorResult>
 
-    @Query("{ 'authors': { \$elemMatch: { 'fullName': { \$concat: [?0, ', ', ?1] } } } }")
-    fun findBooksByAuthor(lastName: String, firstName: String, sort: Sort): Flow<Book>
-
     @Query("{ 'authors': { \$elemMatch: { 'fullName': ?0 } } }")
     fun findBooksByAuthorFullName(fullName: String, sort: Sort): Flow<Book>
 
 
-    @Query("{ 'authors': { \$elemMatch: { 'fullName': { \$concat: [?0, ', ', ?1] } } }, 'sequence': null }")
-    fun findBooksByAuthorWithoutSeries(lastName: String, firstName: String, sort: Sort): Flow<Book>
-
     @Query("{ 'authors': { \$elemMatch: { 'fullName': ?0 } }, 'sequence': null }")
     fun findBooksByAuthorWithoutSeriesFullName(fullName: String, sort: Sort): Flow<Book>
-
-    @Aggregation(
-        pipeline = [
-            "{ \$match: { 'authors': { \$elemMatch: { 'fullName': { \$concat: [?0, ', ', ?1] } } }, 'sequence': { \$ne: null } } }",
-            "{ \$group: { _id: '\$sequence' } }",
-            "{ \$sort: { _id: 1 } }"
-        ]
-    )
-    fun findSeriesByAuthor(lastName: String, firstName: String): Flow<SeriesResult>
 
     @Aggregation(
         pipeline = [

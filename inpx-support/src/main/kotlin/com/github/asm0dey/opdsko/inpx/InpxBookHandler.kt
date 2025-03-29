@@ -57,7 +57,11 @@ class InpxBookHandler : DelegatingBookHandler {
         }
     }
 
-    private fun parseInpFile(inputStream: InputStream, inpxPath: String, inpFileName: String): Sequence<Pair<Book, Long>> = sequence {
+    fun parseInpFile(
+        inputStream: InputStream,
+        inpxPath: String,
+        inpFileName: String
+    ): Sequence<Pair<Book, Long>> = sequence {
         inputStream.bufferedReader().useLines { lines ->
             lines.forEach { line ->
                 if (line.isNotBlank()) {
@@ -95,7 +99,8 @@ class InpxBookHandler : DelegatingBookHandler {
                                 genres = genres,
                                 sequenceName = if (series.isNullOrBlank()) null else series,
                                 sequenceNumber = seriesNumber,
-                                path = createInpxPath(inpxPath, inpFileName, fileName, format)
+                                path = createInpxPath(inpxPath, inpFileName, fileName, format),
+                                cover = byteArrayOf(), // avoid parsing fb2 to extract cover, will do on demand
                             )
                             val resolve =
                                 File(inpxPath).parentFile.resolve(File(inpFileName).nameWithoutExtension + ".zip")
@@ -111,27 +116,35 @@ class InpxBookHandler : DelegatingBookHandler {
         }
     }
 
-    private fun parseAuthors(authorsString: String): List<Author> {
-        return authorsString.split(":").flatMap { authorGroup ->
-            authorGroup.split(",").mapNotNull { authorName ->
-                val trimmedName = authorName.trim()
-                if (trimmedName.isBlank()) return@mapNotNull null
+    fun parseAuthors(authorsString: String): List<Author> {
+        // If the string is empty or blank, return an empty list
+        if (authorsString.isBlank()) return emptyList()
 
-                val nameParts = trimmedName.split(" ")
-                when (nameParts.size) {
-                    1 -> AuthorAdapter(lastName = nameParts[0])
-                    2 -> AuthorAdapter(lastName = nameParts[0], firstName = nameParts[1])
-                    3 -> AuthorAdapter(lastName = nameParts[0], firstName = nameParts[1], middleName = nameParts[2])
-                    else -> AuthorAdapter(
-                        lastName = nameParts[0],
-                        firstName = nameParts.subList(1, nameParts.size).joinToString(" ")
-                    )
-                }
+        // Remove trailing colon if present
+        val cleanedString = if (authorsString.endsWith(":")) authorsString.dropLast(1) else authorsString
+
+        // Split by colon to get author groups
+        return cleanedString.split(":").mapNotNull { authorGroup ->
+            val trimmedName = authorGroup.trim()
+            if (trimmedName.isBlank()) return@mapNotNull null
+
+            // Split by comma to get name parts
+            val parts = trimmedName.split(",").map { it.trim() }
+
+            when (parts.size) {
+                1 -> AuthorAdapter(lastName = parts[0])
+                2 -> AuthorAdapter(lastName = parts[0], firstName = parts[1])
+                3 -> AuthorAdapter(lastName = parts[0], firstName = parts[1], middleName = parts[2])
+                else -> AuthorAdapter(
+                    lastName = parts[0],
+                    firstName = parts[1],
+                    middleName = parts.subList(2, parts.size).joinToString(", ")
+                )
             }
         }
     }
 
-    private fun parseGenres(genresString: String): List<String> {
+    fun parseGenres(genresString: String): List<String> {
         return genresString.split(":").map { it.trim() }.filter { it.isNotBlank() }
     }
 

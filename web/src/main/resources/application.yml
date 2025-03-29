@@ -12,6 +12,9 @@ spring:
     mongodb:
       authentication-database: admin
       auto-index-creation: true
+      port: 27017
+      password: password
+      username: postgres
 #mongock:
 #  migration-scan-package: com.github.asm0dey.opdsko_spring.migrations
 #  runner-type: ApplicationRunner
@@ -25,10 +28,13 @@ spring:
 
 logging:
   level:
-    root: info
+    root: debug
     com.zaxxer: info
     io.netty: info
     javax: info
+    java:
+      lang:
+        ProcessBuilder: warn
     jdk: info
     okhttp3: info
     okio: info
@@ -40,16 +46,28 @@ logging:
     org.springframework: info
     reactor: info
     sun: info
+    io: warn
+    fb2: warn
+    FB2: warn
+    seaweedfs: warn
     org:
+      apache:
+        http: warn
+      mongodb: warn
       springframework:
+        boot:
+          docker: warn
         data:
           mongodb:
             core:
               MongoTemplate: debug
+              ReactiveMongoTemplate: debug
+            repository:
+              query: debug
 scanner:
   sources:
-    - /home/finkel/Books/
-    - /home/finkel/Downloads/f.fb2-183066-183652.zip
+#    - /home/finkel/Books/
+    - /home/finkel/Downloads/flibusta_fb2_local.inpx
 
 meilisearch:
   host: 127.0.0.1
@@ -58,6 +76,7 @@ meilisearch:
 
 pf4j:
   plugin-dir: plugins
+
 seaweedfs:
   filer-grpc-port: 18888
   filer-port: 8888
