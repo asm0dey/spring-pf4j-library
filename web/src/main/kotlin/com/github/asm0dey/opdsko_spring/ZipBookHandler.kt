@@ -4,6 +4,8 @@ import com.github.asm0dey.opdsko.common.Book
 import com.github.asm0dey.opdsko.common.BookHandler
 import com.github.asm0dey.opdsko.common.DelegatingBook
 import com.github.asm0dey.opdsko.common.DelegatingBookHandler
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import net.lingala.zip4j.ZipFile
 import org.pf4j.Extension
 import java.io.File
@@ -19,14 +21,14 @@ private const val ZIP_EXTENSION = ".zip"
 class ZipBookHandler : DelegatingBookHandler {
 
     override fun supportFile(file: File) = file.name.endsWith(ZIP_EXTENSION)
-    override fun obtainBooks(file: File, handlers: Collection<BookHandler>): Sequence<Pair<Book, Long>> {
+    override fun obtainBooks(file: File, handlers: Collection<BookHandler>): Flow<Pair<Book, Long>> {
         return ZipFile(file).use { zip ->
-            sequence {
+            flow {
                 for (fileHeader in zip.fileHeaders) {
                     val book = handlers
                         .firstOrNull { it.supportsFile(fileHeader.fileName) { zip.getInputStream(fileHeader) } }
                         ?.bookInfo(fileHeader.fileName) { zip.getInputStream(fileHeader) } ?: continue
-                    yield(DelegatingBook(book).also {
+                    emit(DelegatingBook(book).also {
                         it.path = "$ZIP_PREFIX${file.absolutePath}#${book.path}"
                     } to fileHeader.uncompressedSize)
                 }
@@ -52,5 +54,13 @@ class ZipBookHandler : DelegatingBookHandler {
         val bookPath = path.substringAfter(ZIP_DELIMITER)
         val zip = ZipFile(File(zipPath))
         return zip.getInputStream(zip.getFileHeader(bookPath))
+    }
+
+    override fun obtainBookSize(path: String): Long {
+        val zipPath = path.substringAfter(ZIP_PREFIX).substringBefore(ZIP_DELIMITER) + ZIP_EXTENSION
+        val bookPath = path.substringAfter(ZIP_DELIMITER)
+        return ZipFile(zipPath).use {
+            it.getFileHeader(bookPath).uncompressedSize
+        }
     }
 }

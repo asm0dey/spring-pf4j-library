@@ -28,7 +28,7 @@ class HtmxHandler(
 
     suspend fun homePage(req: ServerRequest): ServerResponse {
         val x = createHTML(false).div("grid") {
-            NavTile("New books", "Recent publications from this catalog", "/api/new/1")
+            NavTile("New books", "Recent publications from this catalog", "/api/new")
             NavTile("Books by series", "Authors by first letters", "/api/series/browse")
             NavTile("Books by author", "Authors by first letters", "/api/author")
             NavTile("Genres", "Books by genres", "/api/genre")
@@ -39,20 +39,29 @@ class HtmxHandler(
     suspend fun search(req: ServerRequest): ServerResponse {
         val page = req.queryParamOrNull("page")?.toIntOrNull()?.minus(1) ?: 0
         val searchTerm = req.queryParam("search").getOrNull()!!
-        val searchBookByText = bookService.searchBookByName(searchTerm, page)
-        println(searchBookByText)
+        val books = bookService.searchBookByName(searchTerm, page)
+        val imageTypes = bookService.imageTypes(books)
+        val shortDescriptions = bookService.shortDescriptions(books)
         val x = createHTML(false).div("grid") {
-            NavTile("New books", "Recent publications from this catalog", "/api/new/1")
-            NavTile("Books by series", "Authors by first letters", "/api/series/browse")
-            NavTile("Books by author", "Authors by first letters", "/api/author")
-            NavTile("Genres", "Books by genres", "/api/genre")
+            for (book in books) {
+                BookTile(book, imageTypes, shortDescriptions)
+            }
         }
-        return ok(smartHtml(req, x, BreadCrumbs("Library" to "/api")))
+        val y = BreadCrumbs(
+            listOfNotNull(
+                "Library" to "/api",
+                "Search: $searchTerm" to "/api/search?search=$searchTerm",
+            )
+        )
+        return ok(smartHtml(req, x, y))
     }
 
     suspend fun new(req: ServerRequest): ServerResponse {
-        val page = req.pathVariableOrNull("page")?.toIntOrNull()?.minus(1) ?: 0
-        val books = bookService.newBooks(page)
+        val pageParam = req.queryParamOrNull("page")?.toIntOrNull() ?: 1
+        val page = pageParam - 1 // Convert to 0-based for repository
+        val pagedBooks = bookService.newBooks(page)
+        val books = pagedBooks.books
+        val total = pagedBooks.total
         val imageTypes = bookService.imageTypes(books)
         val shortDescriptions = bookService.shortDescriptions(books)
         val x = createHTML(false).div("grid") {
@@ -66,7 +75,8 @@ class HtmxHandler(
                 "New" to "/api/new",
             )
         )
-        return ok(smartHtml(req, x, y))
+        val pagination = Pagination(pageParam, total.toInt(), "/api/new")
+        return ok(smartHtml(req, x, y, pagination))
     }
 
 

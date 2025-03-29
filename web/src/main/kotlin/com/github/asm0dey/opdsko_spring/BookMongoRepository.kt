@@ -14,6 +14,8 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
     fun findAllBy(pageable: Pageable): Flow<Book>
     fun findAllByIdIn(ids: List<String>): Flow<Book>
 
+    suspend fun existsByPathEquals(path: String): Boolean
+
     @Aggregation(
         pipeline = [
             "{ \$unwind: '\$authors' }",
@@ -22,6 +24,7 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
         ]
     )
     fun findAuthorFirstLetters(): Flow<AuthorLetterResult>
+
 
     @Aggregation(
         pipeline = [
@@ -72,4 +75,6 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
     fun findBooksBySeries(series: String, sort: Sort): Flow<Book>
 
     fun findAllByPathIn(paths: List<String>): Flow<Book>
+
+    fun findAllBy():Flow<BookIndexItem>
 }

@@ -7,6 +7,7 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
     compileOnly(libs.pf4j)
+    compileOnly(libs.kotlinx.coroutines.core)
 }
 
 tasks.test {

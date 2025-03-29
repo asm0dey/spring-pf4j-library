@@ -18,7 +18,7 @@ class RoutingConfig {
         GET("/api").nest {
             GET("", htmxHandler::homePage)
             GET("/search", htmxHandler::search)
-            GET("/new/{page}", htmxHandler::new)
+            GET("/new", htmxHandler::new)
 
             // Author navigation routes
             GET("/author", htmxHandler::authorFirstLevel)
@@ -38,5 +38,6 @@ class RoutingConfig {
         GET("/api/book/{id}/info", htmxHandler::getBookInfo)
         POST("/scan", scanner::scan)
         POST("/cleanup", scanner::cleanup)
+        POST("/resync", scanner::resyncMeilisearch)
     }
 }
