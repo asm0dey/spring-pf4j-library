@@ -3,11 +3,12 @@ package com.github.asm0dey.opdsko_spring
 import com.meilisearch.sdk.Client
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.springframework.data.annotation.Id
 import org.springframework.stereotype.Repository
 
 
 @Serializable
-data class BookIndexItem(val id: String, val name: String)
+data class BookIndexItem(@Id val id: String, val name: String)
 
 @Repository
 class Meilisearch(val client: Client) {
@@ -37,6 +38,9 @@ class Meilisearch(val client: Client) {
      */
     fun deleteBooks(ids: List<String>) {
         client.index("books").deleteDocuments(ids)
+    }
+    fun deleteAllBooks() {
+        client.index("books").deleteAllDocuments()
     }
 
     fun search(query: String) =

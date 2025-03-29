@@ -3,6 +3,8 @@ package com.github.asm0dey.opdsko_spring
 import com.github.asm0dey.opdsko.common.BookHandler
 import com.github.asm0dey.opdsko.common.DelegatingBookHandler
 import com.github.asm0dey.opdsko.common.FormatConverter
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import org.springframework.context.annotation.DependsOn
 import org.springframework.core.io.FileSystemResource
 import org.springframework.core.io.InputStreamResource
@@ -74,7 +76,7 @@ class BookService(
     }
 
 
-    fun obtainBooks(absolutePath: String): Sequence<Pair<CommonBook, Long>> {
+    fun obtainBooks(absolutePath: String): Flow<Pair<CommonBook, Long>> {
         val file = File(absolutePath)
         return delegates
             .firstOrNull { it.supportFile(file) }
@@ -86,7 +88,7 @@ class BookService(
             )
                 .filterNotNull()
                 .map { it to file.length() }
-
+                .asFlow()
     }
 
     fun Long.humanReadable(): String {
@@ -106,6 +108,11 @@ class BookService(
         return String.format("%.1f %ciB", value / 1024.0, ci.current())
     }
 
+    fun getRealBookSize(path: String): Long = delegates
+        .firstOrNull { it.supportsPath(path) }
+        ?.obtainBookSize(path)
+        ?: File(path).length()
+
     /**
      * Gets short descriptions for a list of books.
      * If available, retrieves the description from SeaweedFS.
@@ -114,7 +121,7 @@ class BookService(
      * @param bookWithInfos The list of books
      * @return A map of book IDs to short descriptions
      */
-    fun shortDescriptions(bookWithInfos: List<Book>) =
+    suspend fun shortDescriptions(bookWithInfos: List<Book>) =
         bookWithInfos.map { it.id to it }
             .associate { (id, book) ->
                 // First try to get the description from SeaweedFS
@@ -122,7 +129,18 @@ class BookService(
 
                 // If not available in SeaweedFS, generate it and save it
                 if (text == null) {
-                    val size = book.size.humanReadable()
+                    // Check if the size is 0 and get the real size if needed
+                    var bookSize = book.size
+                    if (bookSize == 0L) {
+                        bookSize = getRealBookSize(book.path)
+                        if (bookSize > 0) {
+                            // Update the MongoDB record with the real size
+                            val updatedBook = book.copy(size = bookSize)
+                            bookMongoRepository.save(updatedBook)
+                        }
+                    }
+
+                    val size = bookSize.humanReadable()
                     val seq = book.sequence
                     val seqNo = book.sequenceNumber
 
@@ -192,7 +210,7 @@ class BookService(
     suspend fun searchBookByName(searchTerm: String, page: Int): List<Book> =
         bookRepo.searchBookByName(searchTerm, page)
 
-    suspend fun newBooks(page: Int): List<Book> = bookRepo.newBooks(page)
+    suspend fun newBooks(page: Int): PagedBooks = bookRepo.newBooks(page)
 
     suspend fun findAuthorFirstLetters() = bookMongoRepository.findAuthorFirstLetters()
 
@@ -293,7 +311,8 @@ class BookService(
             } else {
                 // We found the original cover but not the preview, so we'll use the original
                 // Get the content type of the cover image from SeaweedFS
-                contentType = seaweedFSService.getBookCoverContentType(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+                contentType =
+                    seaweedFSService.getBookCoverContentType(bookId) ?: return ServerResponse.notFound().buildAndAwait()
             }
         } else {
             // Get the content type of the cover preview image from SeaweedFS
@@ -376,7 +395,8 @@ class BookService(
                 .contentType(MediaType.parseMediaType(commonBook.coverContentType!!))
                 .bodyValueAndAwait(inputStreamResource)
         } else {
-            contentType = seaweedFSService.getBookCoverContentType(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+            contentType =
+                seaweedFSService.getBookCoverContentType(bookId) ?: return ServerResponse.notFound().buildAndAwait()
             val inputStreamResource = InputStreamResource(coverInputStream)
             return ServerResponse.ok()
                 .contentType(MediaType.parseMediaType(contentType))

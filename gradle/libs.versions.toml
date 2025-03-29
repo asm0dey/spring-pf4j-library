@@ -7,24 +7,16 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta11" }
-##                                          ⬆ = "9.0.0-beta11" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependencies = { id = "io.spring.dependency-management", version = "1.1.7" }
 
 [versions]
 
 kotlin = "2.1.20"
-##  ⬆ = "2.1.20-Beta1"
-##  ⬆ = "2.1.20-Beta2"
-##  ⬆ = "2.1.20-RC"
-##  ⬆ = "2.1.20-RC2"
-##  ⬆ = "2.1.20-RC3"
-##  ⬆ = "2.1.20"
 kotlinx-html = "0.12.0"
 tinylog = "2.7.0"
 pf4j = "3.13.0"
 spring-boot = "3.4.4"
-##       ⬆ = "3.4.4"
 mongock = "5.5.1"
 
 [libraries]
@@ -54,11 +46,11 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
 kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor" }
-kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "0.10.1" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.1" }
 kotlinx-html-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-html-jvm", version.ref = "kotlinx-html" }
 kotlinx-serialization-json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0"
 kotlinx-serialization-protobuf = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.0"
-meilisearch = "com.meilisearch.sdk:meilisearch-java:0.14.2"
+meilisearch = "com.meilisearch.sdk:meilisearch-java:0.14.3"
 pf4j = { module = "org.pf4j:pf4j", version.ref = "pf4j" }
 postgresql = "org.postgresql:postgresql:42.7.5"
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions" }

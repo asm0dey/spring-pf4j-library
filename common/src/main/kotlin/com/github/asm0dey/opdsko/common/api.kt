@@ -1,5 +1,6 @@
 package com.github.asm0dey.opdsko.common
 
+import kotlinx.coroutines.flow.Flow
 import org.pf4j.ExtensionPoint
 import java.io.File
 import java.io.InputStream
@@ -13,10 +14,11 @@ interface BookHandler : ExtensionPoint {
 
 interface DelegatingBookHandler : ExtensionPoint {
     fun supportFile(file: File): Boolean
-    fun obtainBooks(file: File, handlers: Collection<BookHandler>): Sequence<Pair<Book, Long>>
+    fun obtainBooks(file: File, handlers: Collection<BookHandler>): Flow<Pair<Book, Long>>
     fun supportsPath(path: String): Boolean
     fun obtainBook(path: String, handlers: Collection<BookHandler>): Book
     fun getData(path: String, handlers: Collection<BookHandler>): InputStream
+    fun obtainBookSize(path: String): Long
 }
 
 interface FormatConverter : ExtensionPoint {

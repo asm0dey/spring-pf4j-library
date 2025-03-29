@@ -14,6 +14,8 @@ import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 
+data class PagedBooks(val books: List<Book>, val total: Long)
+
 
 @Repository
 @Transactional(readOnly = true)
@@ -44,11 +46,14 @@ class BookRepo(
 
     @Transactional
     suspend fun save(toList: List<Book>): List<Book> {
-        val existingBookPaths = bookMongoRepository.findAllByPathIn(toList.map(Book::path)).map { it.path }.toSet()
-        return bookMongoRepository.saveAll(toList.filterNot { it.path in existingBookPaths }).toList()
+        return bookMongoRepository.saveAll(toList).toList()
     }
 
-    suspend fun newBooks(page: Int): List<Book> = bookMongoRepository
-        .findAllBy(PageRequest.of(page, 50, Sort.by(Sort.Direction.DESC, "added")))
-        .toList()
+    suspend fun newBooks(page: Int): PagedBooks {
+        val books = bookMongoRepository
+            .findAllBy(PageRequest.of(page, 50, Sort.by(Sort.Direction.DESC, "added")))
+            .toList()
+        val total = bookMongoRepository.count()
+        return PagedBooks(books, total)
+    }
 }

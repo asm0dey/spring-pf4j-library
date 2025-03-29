@@ -1,6 +1,11 @@
 package com.github.asm0dey.opdsko.inpx
 
 import com.github.asm0dey.opdsko.common.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
 import net.lingala.zip4j.ZipFile
 import org.pf4j.Extension
 import java.io.File
@@ -43,15 +48,16 @@ class InpxBookHandler : DelegatingBookHandler {
 
     override fun supportFile(file: File) = file.name.endsWith(INPX_EXTENSION)
 
-    override fun obtainBooks(file: File, handlers: Collection<BookHandler>): Sequence<Pair<Book, Long>> {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun obtainBooks(file: File, handlers: Collection<BookHandler>): Flow<Pair<Book, Long>> {
         return ZipFile(file).use { zip ->
             zip
                 .fileHeaders
                 .filter {
                     it.fileName.endsWith(".inp")
                 }
-                .asSequence()
-                .flatMap {
+                .asFlow()
+                .flatMapConcat {
                     parseInpFile(zip.getInputStream(it), file.absolutePath, it.fileName)
                 }
         }
@@ -61,7 +67,7 @@ class InpxBookHandler : DelegatingBookHandler {
         inputStream: InputStream,
         inpxPath: String,
         inpFileName: String
-    ): Sequence<Pair<Book, Long>> = sequence {
+    ): Flow<Pair<Book, Long>> = flow {
         inputStream.bufferedReader().useLines { lines ->
             lines.forEach { line ->
                 if (line.isNotBlank()) {
@@ -105,9 +111,8 @@ class InpxBookHandler : DelegatingBookHandler {
                             val resolve =
                                 File(inpxPath).parentFile.resolve(File(inpFileName).nameWithoutExtension + ".zip")
                             if (resolve.exists()) {
-                                val zipFile =
-                                    ZipFile(resolve)
-                                yield(book to zipFile.getFileHeader("$fileName.$format").uncompressedSize)
+                                // Return 0 for size instead of reading it immediately
+                                emit(book to 0L)
                             }
                         }
                     }
@@ -227,6 +232,13 @@ class InpxBookHandler : DelegatingBookHandler {
             // If there's an error, close the ZipFile and throw an error
             zip.close()
             error("Error reading file from ZIP: $bookPath. ${e.message}")
+        }
+    }
+
+    override fun obtainBookSize(path: String): Long {
+        val (inpxPath, inpFileName, bookPath) = parseInpxPath(path)
+        ZipFile(File(inpxPath).parentFile.resolve(File(inpFileName).nameWithoutExtension + ".zip")).use {
+            return it.getFileHeader(bookPath)?.uncompressedSize ?: 0L
         }
     }
 }

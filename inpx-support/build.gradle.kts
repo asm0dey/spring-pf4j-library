@@ -19,6 +19,7 @@ dependencies {
     kapt(libs.pf4j)
     compileOnly(libs.pf4j)
     implementation(libs.kotlinx.serialization.protobuf)
+    compileOnly(libs.kotlinx.coroutines.core)
     implementation(libs.zip4j)
 
     // Test dependencies
