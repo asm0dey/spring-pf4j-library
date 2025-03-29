@@ -13,7 +13,6 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
-import java.util.*
 import javax.xml.namespace.QName
 import javax.xml.stream.XMLInputFactory
 import javax.xml.stream.events.StartElement
@@ -95,10 +94,10 @@ data class Book(
     val sequence: String? = null,
     var sequenceNumber: Int? = null,
     val name: String,
-    val added: LocalDateTime = LocalDateTime.now(),
+    @Indexed val added: LocalDateTime = LocalDateTime.now(),
     val size: Long,
     @Indexed(unique = true) val path: String,
-    @Id val id: String = UUID.nameUUIDFromBytes(path.toByteArray()).toString(),
+    @Id val id: String? = null,
     val hasCover: Boolean = true
 )
 
@@ -108,5 +107,4 @@ data class Author(
     override val middleName: String? = null,
     override val nickname: String? = null,
     @Indexed val fullName: String = "$lastName, $firstName"
-) : com.github.asm0dey.opdsko.common.Author {
-}
+) : com.github.asm0dey.opdsko.common.Author

@@ -44,21 +44,21 @@ class BookService(
     fun imageTypes(books: List<Book>) = books
         .map { Pair(it.id, it) }
         .associate { (id, book) ->
-            if (!book.hasCover) return@associate id to null
+            if (!book.hasCover) return@associate id!! to null
             var type = try {
-                seaweedFSService.getBookCoverContentType(id)
+                seaweedFSService.getBookCoverContentType(id!!)
             } catch (e: Exception) {
                 null
             }
             if (type == null || type == "application/octet-stream") {
                 val fb = obtainBook(book.path)
                 if (fb?.cover != null && fb.coverContentType != null) {
-                    seaweedFSService.saveBookCover(id, fb.cover!!, fb.coverContentType!!)
+                    seaweedFSService.saveBookCover(id!!, fb.cover!!, fb.coverContentType!!)
                     type = fb.coverContentType
                 }
             }
 
-            id to type
+            id!! to type
         }
 
     fun obtainBook(path: String): CommonBook? {
@@ -118,7 +118,7 @@ class BookService(
         bookWithInfos.map { it.id to it }
             .associate { (id, book) ->
                 // First try to get the description from SeaweedFS
-                var text = seaweedFSService.getBookDescription(id)
+                var text = seaweedFSService.getBookDescription(id!!)
 
                 // If not available in SeaweedFS, generate it and save it
                 if (text == null) {
@@ -333,7 +333,6 @@ class BookService(
         }
 
         val fileName = generateFileName(book, originalExtension)
-        val contentType = getContentTypeForExtension(originalExtension)
 
         val headers = HttpHeaders().apply {
             contentDisposition = ContentDisposition.attachment()
@@ -344,9 +343,8 @@ class BookService(
         val bookData = InputStreamResource(getBookData(book.path))
         return ServerResponse.ok()
             .headers { it.addAll(headers) }
-            .contentType(MediaType.parseMediaType(contentType))
+            .contentType(MediaType.parseMediaType(getContentTypeForExtension(originalExtension)))
             .bodyValueAndAwait(bookData)
-            .also { bookData.inputStream.close() }
     }
 
     /**
@@ -377,14 +375,12 @@ class BookService(
             return ServerResponse.ok()
                 .contentType(MediaType.parseMediaType(commonBook.coverContentType!!))
                 .bodyValueAndAwait(inputStreamResource)
-                .also { newCoverInputStream.close() }
         } else {
             contentType = seaweedFSService.getBookCoverContentType(bookId) ?: return ServerResponse.notFound().buildAndAwait()
             val inputStreamResource = InputStreamResource(coverInputStream)
             return ServerResponse.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .bodyValueAndAwait(inputStreamResource)
-                .also { coverInputStream.close() }
         }
     }
 }
