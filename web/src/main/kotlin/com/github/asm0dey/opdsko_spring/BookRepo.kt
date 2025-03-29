@@ -30,8 +30,8 @@ class BookRepo(
             .search(
                 SearchRequest(searchTerm)
                     .apply {
-                        limit = 50
-                        offset = 50 * page
+                        limit = 15
+                        offset = 15 * page
                     })
             .hits
         val ids = Json.decodeFromString<List<BookIndexItem>>(GsonJsonHandler().encode(rawHits))
@@ -51,7 +51,7 @@ class BookRepo(
 
     suspend fun newBooks(page: Int): PagedBooks {
         val books = bookMongoRepository
-            .findAllBy(PageRequest.of(page, 50, Sort.by(Sort.Direction.DESC, "added")))
+            .findAllBy(PageRequest.of(page, 24, Sort.by(Sort.Direction.DESC, "added")))
             .toList()
         val total = bookMongoRepository.count()
         return PagedBooks(books, total)
