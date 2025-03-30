@@ -1,8 +1,5 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmExtension
-
 plugins {
     alias(libs.plugins.kotlin.jvm) apply false
-//    alias(libs.plugins.spring.dependencies)
     alias(libs.plugins.spring.boot) apply false
 }
 repositories {
@@ -11,6 +8,12 @@ repositories {
 
 allprojects.filterNot { it.name == "spring-meilisearch" || it.name == "seaweedfs-spring" }.forEach {
     it.plugins.apply("org.jetbrains.kotlin.jvm")
+}
+allprojects {
+    tasks.withType<AbstractArchiveTask>().configureEach {
+        isPreserveFileTimestamps = false
+        isReproducibleFileOrder = true
+    }
 }
 val copyPlugins = tasks.register<Copy>("copyPlugins") {
     delete(fileTree("${layout.projectDirectory.asFile}/plugins") {
