@@ -1,12 +1,11 @@
 import org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+import org.springframework.boot.gradle.tasks.bundling.BootBuildImage
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
     alias(libs.plugins.kotlin.spring)
     alias(libs.plugins.serialization)
     alias(libs.plugins.spring.boot)
-//    alias(libs.plugins.spring.dependencies)
-    alias(libs.plugins.graalvm)
     application
     kotlin("kapt")
 }
@@ -43,7 +42,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.html.jvm)
     implementation(libs.reactor.kotlin.extensions)
-    implementation(libs.reflections)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.mongo)
     implementation(libs.spring.boot.starter.validation)
@@ -81,10 +79,19 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-graalvmNative {
-    toolchainDetection.set(false)
-}
-
 tasks.named<BootJar>("bootJar") {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+tasks.named<BootBuildImage>("bootBuildImage") {
+    environment.putAll(
+        mapOf(
+            "BP_JVM_VERSION" to "24",
+            "BP_NATIVE_IMAGE" to "false",
+            "BP_JVM_CDS_ENABLED" to "true",
+            "BP_SPRING_AOT_ENABLED" to "true",
+            "BP_JVM_TYPE" to "JRE"
+        )
+    )
+    imageName.set("asm0dey/${project.name}:${project.version}")
 }
