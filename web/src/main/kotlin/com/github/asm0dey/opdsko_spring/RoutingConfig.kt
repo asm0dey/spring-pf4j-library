@@ -12,7 +12,7 @@ import java.net.URI
 class RoutingConfig {
 
     @Bean
-    fun router(htmxHandler: HtmxHandler, commonHandler: CommonHandler, scanner: Scanner) = coRouter {
+    fun router(htmxHandler: HtmxHandler, opdsHandler: OpdsHandler, commonHandler: CommonHandler, scanner: Scanner) = coRouter {
         GET("/") { ServerResponse.permanentRedirect(URI("/api")).buildAndAwait() }
         resources("/**", ClassPathResource("static/"))
         GET("/api").nest {
@@ -34,6 +34,28 @@ class RoutingConfig {
                 }
             }
             GET("/series/{series}", htmxHandler::seriesBooks)
+        }
+
+        // OPDS routes
+        GET("/opds").nest {
+            GET("", opdsHandler::homePage)
+            GET("/search", opdsHandler::search)
+            GET("/new", opdsHandler::new)
+
+            GET("/author").nest {
+                GET("", opdsHandler::authorFirstLevel)
+                GET("/{prefix}", opdsHandler::authorPrefixLevel)
+                GET("/view").nest {
+                    GET("/{fullName}").nest {
+                        GET("", opdsHandler::authorView)
+                        GET("/series", opdsHandler::authorSeries)
+                        GET("/series/{series}", opdsHandler::authorSeriesBooks)
+                        GET("/noseries", opdsHandler::authorNoSeriesBooks)
+                        GET("/all", opdsHandler::authorAllBooks)
+                    }
+                }
+            }
+            GET("/series/{series}", opdsHandler::seriesBooks)
         }
         GET("/common").nest {
             GET("/book/{id}").nest {

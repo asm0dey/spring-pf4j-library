@@ -35,6 +35,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.html.jvm)
+    implementation(libs.kotlin.xml.builder)
     implementation(libs.reactor.kotlin.extensions)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.mongo)
