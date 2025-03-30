@@ -11,7 +11,7 @@ import java.net.InetSocketAddress
 class SeaweedFSContainerConnectionDetailsFactory :
     ContainerConnectionDetailsFactory<Container<*>, SeaweedFSConnectionDetails>(
         "seaweedfs",
-        "seaweedfs.client.FilerClient2"
+        "seaweedfs.client.FilerClient"
     ) {
     override fun getContainerConnectionDetails(source: ContainerConnectionSource<Container<*>>?): SeaweedFSConnectionDetails {
         return SeaweedFSContainerConnectionDetails(source)

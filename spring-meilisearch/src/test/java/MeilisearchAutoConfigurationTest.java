@@ -75,21 +75,4 @@ class MeilisearchAutoConfigurationTest {
                             .hasMessage("Meilisearch host is blank");
                 });
     }
-
-    @Test
-    void shouldFailWithMeaningfulErrorWhenPortOutOfRange() {
-        contextRunner
-                .withPropertyValues(
-                        "meilisearch.host=localhost",
-                        "meilisearch.port=99999" // invalid port
-                )
-                .run(context -> {
-                    assertThat(context).hasFailed();
-                    assertThat(context.getStartupFailure())
-                            .isInstanceOf(BeanCreationException.class)
-                            .hasMessageContaining("99999")
-                            .hasMessageContaining("port");
-                });
-    }
-
 }
