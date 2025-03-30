@@ -5,9 +5,11 @@ import com.github.asm0dey.opdsko.common.DelegatingBookHandler
 import com.github.asm0dey.opdsko.common.FormatConverter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.toList
 import org.springframework.context.annotation.DependsOn
 import org.springframework.core.io.FileSystemResource
 import org.springframework.core.io.InputStreamResource
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
@@ -229,8 +231,12 @@ class BookService(
     suspend fun findBooksByAuthorWithoutSeriesFullName(fullName: String, sort: Sort) =
         bookMongoRepository.findBooksByAuthorWithoutSeriesFullName(fullName, sort)
 
-    suspend fun findBooksByAuthorFullName(fullName: String, sort: Sort) =
-        bookMongoRepository.findBooksByAuthorFullName(fullName, sort)
+    suspend fun findBooksByAuthorFullName(fullName: String, page: Int): PagedBooks {
+        val pageable = PageRequest.of(page, 24, Sort.by(Sort.Direction.ASC, "name"))
+        val books = bookMongoRepository.findBooksByAuthorFullName(fullName, pageable).toList()
+        val total = bookMongoRepository.countByAuthorsFullName(fullName)
+        return PagedBooks(books, total)
+    }
 
     suspend fun saveBook(book: Book) = bookMongoRepository.save(book)
 

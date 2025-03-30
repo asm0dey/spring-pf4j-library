@@ -523,10 +523,10 @@ class HtmxHandler(
         }
         val encodedFullName = req.pathVariable("fullName")
         // Check if the author has any series
-        val seriesExist = bookService.findSeriesByAuthorFullName(fullName).firstOrNull()!=null
+        val seriesExist = bookService.findSeriesByAuthorFullName(fullName).firstOrNull() != null
 
         // If the author doesn't have any series, redirect directly to the "All Books" view
-        if (seriesExist) return authorAllBooks(req)
+        if (!seriesExist) return authorAllBooks(req)
 
         val x = createHTML(false).div("grid") {
             NavTile(
@@ -658,13 +658,15 @@ class HtmxHandler(
     }
 
     suspend fun authorAllBooks(req: ServerRequest): ServerResponse {
-        val fullName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
-        }
         val encodedFullName = req.pathVariable("fullName")
+        val fullName = withContext(Dispatchers.IO) {
+            URLDecoder.decode(encodedFullName, "UTF-8")
+        }
 
-        val sort = Sort.by(Sort.Direction.ASC, "name")
-        val books = bookService.findBooksByAuthorFullName(fullName, sort).toList()
+        val pageParam = req.queryParamOrNull("page")?.toIntOrNull() ?: 1
+        val page = pageParam - 1 // Convert to 0-based for repository
+        val pagedBooks = bookService.findBooksByAuthorFullName(fullName, page)
+        val books = pagedBooks.books
 
         val imageTypes = bookService.imageTypes(books)
         val shortDescriptions = bookService.shortDescriptions(books)
@@ -684,7 +686,9 @@ class HtmxHandler(
             )
         )
 
-        return ok(smartHtml(req, x, breadcrumbs))
+        val pagination = Pagination(pageParam, pagedBooks.total.toInt(), "/api/author/view/$encodedFullName/all")
+
+        return ok(smartHtml(req, x, breadcrumbs, pagination))
     }
 
     private fun buildAuthorBreadcrumbs(prefix: String): String {
@@ -742,7 +746,15 @@ class HtmxHandler(
                     div("tags") {
                         strong { +"Author(s): " }
                         book.authors.forEach { author ->
-                            a(href = "/api/author/view/${URLEncoder.encode(author.fullName, Charset.defaultCharset())}", classes = "tag is-info") {
+                            a(
+                                href = "/api/author/view/${
+                                    URLEncoder.encode(
+                                        author.fullName,
+                                        Charset.defaultCharset()
+                                    )
+                                }",
+                                classes = "tag is-info"
+                            ) {
                                 +"${author.firstName} ${author.lastName}"
                             }
                         }
@@ -815,14 +827,7 @@ class HtmxHandler(
             listOf(
                 "Library" to "/api",
                 "Series" to "/api/series",
-                seriesName to "/api/series/${
-                    withContext(Dispatchers.IO) {
-                        URLEncoder.encode(
-                            seriesName,
-                            "UTF-8"
-                        )
-                    }
-                }"
+                seriesName to "/api/series/${req.pathVariable("series")}"
             )
         )
 
