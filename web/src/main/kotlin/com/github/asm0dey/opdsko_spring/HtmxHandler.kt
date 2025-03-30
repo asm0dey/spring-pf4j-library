@@ -2,6 +2,7 @@ package com.github.asm0dey.opdsko_spring
 
 import com.github.asm0dey.opdsko.common.FormatConverter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.html.*
@@ -520,9 +521,12 @@ class HtmxHandler(
         val fullName = withContext(Dispatchers.IO) {
             URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
         }
-        val encodedFullName = withContext(Dispatchers.IO) {
-            URLEncoder.encode(fullName, "UTF-8")
-        }
+        val encodedFullName = req.pathVariable("fullName")
+        // Check if the author has any series
+        val seriesExist = bookService.findSeriesByAuthorFullName(fullName).firstOrNull()!=null
+
+        // If the author doesn't have any series, redirect directly to the "All Books" view
+        if (seriesExist) return authorAllBooks(req)
 
         val x = createHTML(false).div("grid") {
             NavTile(
