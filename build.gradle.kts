@@ -1,20 +1,17 @@
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmExtension
+
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.jvm) apply false
 //    alias(libs.plugins.spring.dependencies)
     alias(libs.plugins.spring.boot) apply false
 }
 repositories {
     mavenCentral()
 }
-allprojects {
-    plugins.apply("org.jetbrains.kotlin.jvm")
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
-        }
-    }
-}
 
+allprojects.filterNot { it.name == "spring-meilisearch" || it.name == "seaweedfs-spring" }.forEach {
+    it.plugins.apply("org.jetbrains.kotlin.jvm")
+}
 val copyPlugins = tasks.register<Copy>("copyPlugins") {
     delete(fileTree("${layout.projectDirectory.asFile}/plugins") {
         include("*.jar")
