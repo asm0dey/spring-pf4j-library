@@ -13,12 +13,6 @@ plugins {
 group = "com.github.asm0dey"
 version = "0.0.1"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(23)
-    }
-}
-
 application {
     mainClass = "com.github.asm0dey.opdsko_spring.OpdskoSpringApplicationKt"
 }
@@ -47,8 +41,8 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.meilisearch)
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+    implementation(libs.spring.boot.starter.security)
+    implementation(libs.spring.boot.starter.oauth2.client)
 
     implementation(platform(libs.mongock.bom))
     implementation(libs.mongock.springboot)
@@ -88,7 +82,7 @@ tasks.named<BootJar>("bootJar") {
 tasks.named<BootBuildImage>("bootBuildImage") {
     environment.putAll(
         mapOf(
-            "BP_JVM_VERSION" to "24",
+            "BP_JVM_VERSION" to "23",
             "BP_NATIVE_IMAGE" to "false",
             "BP_JVM_CDS_ENABLED" to "true",
             "BP_SPRING_AOT_ENABLED" to "true",

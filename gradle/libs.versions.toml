@@ -62,6 +62,8 @@ spring-boot-starter-mongo = { module = "org.springframework.boot:spring-boot-sta
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test", version.ref = "spring-boot" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
+spring-boot-starter-security  = {module="org.springframework.boot:spring-boot-starter-security"}
+spring-boot-starter-oauth2-client  = {module="org.springframework.boot:spring-boot-starter-oauth2-client"}
 spring-boot-test = { module = "org.springframework.boot:spring-boot-test", version.ref = "spring-boot" }
 zip4j = "net.lingala.zip4j:zip4j:2.11.5"
 seaweedfs = "com.seaweedfs:seaweedfs-client:3.80"

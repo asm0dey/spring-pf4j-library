@@ -1,0 +1,12 @@
+.kotlin
+.env*
+fb2c*
+kls_database.db
+conversion.log
+data/
+web/build/distributions/
+*.jar
+*.class
+Dockerfile
+# !web/build/lib
+

@@ -20,7 +20,7 @@ jobs:
     - name: Set up JDK
       uses: actions/setup-java@v4
       with:
-        java-version: '21'
+        java-version: '23'
         distribution: 'liberica'
         cache: gradle
 
@@ -48,7 +48,7 @@ jobs:
           web/build/libs/*.jar
           plugins/*.jar
 
-    # Build and push Docker image for the main application using bootBuildImage
+    # Build and push Docker image for the main application using Docker build
     - name: Login to GitHub Container Registry
       if: startsWith(github.ref, 'refs/tags/v')
       uses: docker/login-action@v3
@@ -57,19 +57,24 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Set up Docker Buildx
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: docker/setup-buildx-action@v3
+
     - name: Build and push Docker image
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
-        # Set environment variables for bootBuildImage
-        export DOCKER_REGISTRY=ghcr.io
-        export DOCKER_USERNAME=${{ github.actor }}
-        export DOCKER_PASSWORD=${{ secrets.GITHUB_TOKEN }}
-
         # Extract version from tag (remove 'v' prefix)
         VERSION=${GITHUB_REF#refs/tags/v}
 
-        # Build and push Docker image using bootBuildImage
-        ./gradlew :web:bootBuildImage \
-          -PimageTag=$VERSION \
-          -PimageName=ghcr.io/${{ github.repository_owner }}/opdsko \
-          --publishImage
+        # Build the application first to ensure we have the JAR file
+        ./gradlew :web:build
+
+        # Build and push Docker image using Docker build
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          -t ghcr.io/${{ github.repository_owner }}/opdsko:$VERSION \
+          -t ghcr.io/${{ github.repository_owner }}/opdsko:latest \
+          --push \
+          -f Dockerfile.fromjar \
+          .
