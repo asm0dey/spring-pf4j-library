@@ -8,6 +8,7 @@ import java.net.URI
 import java.net.URL
 import java.nio.channels.Channels
 import java.nio.file.attribute.PosixFilePermission.*
+import kotlin.concurrent.thread
 import kotlin.io.path.Path
 import kotlin.io.path.setPosixFilePermissions
 
@@ -36,59 +37,61 @@ class Fb2ToEpubConverterPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     private fun downloadEpubConverter() {
-        val osArch = System.getProperty("os.arch").lowercase()
-        val arch =
-            if (os != null) {
-                when {
-                    osArch.contains("64") ->
-                        when (os) {
-                            "linux", "win", "darwin" -> "amd64"
-                            else -> error("Unsupported platform")
-                        }
+        thread(isDaemon = true) {
+            val osArch = System.getProperty("os.arch").lowercase()
+            val arch =
+                if (os != null) {
+                    when {
+                        osArch.contains("64") ->
+                            when (os) {
+                                "linux", "win", "darwin" -> "amd64"
+                                else -> error("Unsupported platform")
+                            }
 
-                    osArch.contains("86") ->
-                        when (os) {
-                            "linux", "win" -> "386"
-                            else -> error("Unsupported platform")
-                        }
+                        osArch.contains("86") ->
+                            when (os) {
+                                "linux", "win" -> "386"
+                                else -> error("Unsupported platform")
+                            }
 
-                    else -> {
-                        epubConverterAccessible = false
-                        null
+                        else -> {
+                            epubConverterAccessible = false
+                            null
+                        }
                     }
-                }
-            } else null
-        if (arch != null) {
-            val targetFile = "fb2c-$FB2C_VERSION.zip"
-            if (!File(targetFile).exists()) {
-                log.info(
-                    "It seems that there is no archive of fb2c next to the executable, downloading it…"
-                )
-                downloadFile(
-                    URI(
-                        "https://github.com/rupor-github/fb2converter/releases/download/$FB2C_VERSION/fb2c-$os-$arch.zip"
+                } else null
+            if (arch != null) {
+                val targetFile = "fb2c-$FB2C_VERSION.zip"
+                if (!File(targetFile).exists()) {
+                    log.info(
+                        "It seems that there is no archive of fb2c next to the executable, downloading it…"
                     )
-                        .toURL(),
-                    targetFile
-                )
-                log.info(
-                    """Downloaded fb2c archive.
+                    downloadFile(
+                        URI(
+                            "https://github.com/rupor-github/fb2converter/releases/download/$FB2C_VERSION/fb2c-$os-$arch.zip"
+                        )
+                            .toURL(),
+                        targetFile
+                    )
+                    log.info(
+                        """Downloaded fb2c archive.
                 |Unpacking…
             """.trimMargin()
-                )
+                    )
+                }
+                net.lingala.zip4j.ZipFile(targetFile).use {
+                    val myHeader = it.fileHeaders.first { it.fileName.startsWith("fb2c") }
+                    it.extractFile(
+                        myHeader,
+                        it.file.absoluteFile.parentFile.absolutePath,
+                        myHeader.fileName.substringAfter('/')
+                    )
+                    posixSetAccessible(myHeader.fileName)
+                }
+                setConfig()
+                log.info("Unpacked. Resuming application launch.")
+                epubConverterAccessible = true
             }
-            net.lingala.zip4j.ZipFile(targetFile).use {
-                val myHeader = it.fileHeaders.first { it.fileName.startsWith("fb2c") }
-                it.extractFile(
-                    myHeader,
-                    it.file.absoluteFile.parentFile.absolutePath,
-                    myHeader.fileName.substringAfter('/')
-                )
-                posixSetAccessible(myHeader.fileName)
-            }
-            setConfig()
-            log.info("Unpacked. Resuming application launch.")
-            epubConverterAccessible = true
         }
     }
 
