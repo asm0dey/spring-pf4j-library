@@ -26,7 +26,7 @@ class Fb2ToEpubConverter : FormatConverter {
         val tempInputFile = createTempFile("fb2_input_", ".fb2").toFile()
         tempInputFile.deleteOnExit()
 
-        var tempOutputFile = createTempDirectory().toFile()
+        val tempOutputFile = createTempDirectory().toFile()
         tempOutputFile.deleteOnExit()
 
         try {
