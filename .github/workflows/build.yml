@@ -1,0 +1,75 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'liberica'
+        cache: gradle
+
+    - name: Build with Gradle
+      run: ./gradlew build
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts
+        path: |
+          web/build/libs/*.jar
+          plugins/*.jar
+
+    # Only run release steps when a tag is pushed
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+        files: |
+          web/build/libs/*.jar
+          plugins/*.jar
+
+    # Build and push Docker image for the main application using bootBuildImage
+    - name: Login to GitHub Container Registry
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        # Set environment variables for bootBuildImage
+        export DOCKER_REGISTRY=ghcr.io
+        export DOCKER_USERNAME=${{ github.actor }}
+        export DOCKER_PASSWORD=${{ secrets.GITHUB_TOKEN }}
+
+        # Extract version from tag (remove 'v' prefix)
+        VERSION=${GITHUB_REF#refs/tags/v}
+
+        # Build and push Docker image using bootBuildImage
+        ./gradlew :web:bootBuildImage \
+          -PimageTag=$VERSION \
+          -PimageName=ghcr.io/${{ github.repository_owner }}/opdsko \
+          --publishImage

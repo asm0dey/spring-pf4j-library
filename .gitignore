@@ -41,5 +41,5 @@ out/
 .env*
 fb2c*
 kls_database.db
-seaweedfs-data/
 conversion.log
+data/
