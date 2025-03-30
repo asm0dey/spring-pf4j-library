@@ -1,7 +1,5 @@
 package com.github.asm0dey.opdsko_spring.meilisearch;
 
-import java.net.InetSocketAddress;
-
 public class MeilisearchPropertiesConnectionDetails implements MeilisearchConnectionDetails {
     private final MeilisearchProperties properties;
 
@@ -10,12 +8,9 @@ public class MeilisearchPropertiesConnectionDetails implements MeilisearchConnec
     }
 
     @Override
-    public InetSocketAddress address() {
+    public String address() {
         if (properties.host().isBlank()) throw new IllegalStateException("Meilisearch host is blank");
-        return new InetSocketAddress(
-                properties.host(),
-                properties.port()
-        );
+        return properties.host() + ":" + properties.port();
     }
 
     @Override

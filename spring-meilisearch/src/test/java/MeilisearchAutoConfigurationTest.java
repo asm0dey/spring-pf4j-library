@@ -6,8 +6,6 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-import java.net.InetSocketAddress;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class MeilisearchAutoConfigurationTest {
@@ -35,8 +33,7 @@ class MeilisearchAutoConfigurationTest {
                     assertThat(context).hasSingleBean(Client.class);
 
                     MeilisearchConnectionDetails details = context.getBean(MeilisearchConnectionDetails.class);
-                    assertThat(details.address().getHostName()).isEqualTo("localhost");
-                    assertThat(details.address().getPort()).isEqualTo(7700);
+                    assertThat(details.address()).isEqualTo("localhost:7700");
                     assertThat(details.key()).isEqualTo("test-key");
                 });
     }
@@ -47,8 +44,8 @@ class MeilisearchAutoConfigurationTest {
                 .withBean(MeilisearchConnectionDetails.class, () ->
                         new MeilisearchConnectionDetails() {
                             @Override
-                            public InetSocketAddress address() {
-                                return new InetSocketAddress("custom-host", 7701);
+                            public String address() {
+                                return "custom-host:" + 7701;
                             }
 
                             @Override
@@ -61,8 +58,7 @@ class MeilisearchAutoConfigurationTest {
                     assertThat(context).hasSingleBean(Client.class);
 
                     MeilisearchConnectionDetails details = context.getBean(MeilisearchConnectionDetails.class);
-                    assertThat(details.address().getHostName()).isEqualTo("custom-host");
-                    assertThat(details.address().getPort()).isEqualTo(7701);
+                    assertThat(details.address()).isEqualTo("custom-host:" + 7701);
                     assertThat(details.key()).isEqualTo("custom-key");
                 });
     }

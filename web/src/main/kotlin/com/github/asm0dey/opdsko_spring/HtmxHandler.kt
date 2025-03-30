@@ -244,7 +244,7 @@ class HtmxHandler(
                 }
                 if (images[bookWithInfo.id] != null && bookWithInfo.hasCover) {
                     div("card-image") {
-                        figure("image") {
+                        figure("image is-2by3") {
                             a {
                                 attributes["hx-get"] = "/api/book/${bookWithInfo.id}/image"
                                 attributes["hx-swap"] = "innerHTML"
