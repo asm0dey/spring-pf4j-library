@@ -31,11 +31,8 @@ public class MeilisearchDockerComposeConnectionDetailsFactory
         }
 
         @Override
-        public InetSocketAddress address() {
-            return new InetSocketAddress(
-                    Optional.ofNullable(runningService.host()).orElse("localhost"),
-                    runningService.ports().get(7700)
-            );
+        public String address() {
+            return Optional.ofNullable(runningService.host()).orElse("localhost") + ":" + runningService.ports().get(7700);
         }
 
         @Override
