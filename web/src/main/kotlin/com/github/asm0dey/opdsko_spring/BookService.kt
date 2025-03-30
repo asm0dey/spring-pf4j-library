@@ -11,20 +11,41 @@ import org.springframework.core.io.FileSystemResource
 import org.springframework.core.io.InputStreamResource
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import org.springframework.http.ContentDisposition
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
-import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.bodyValueAndAwait
-import org.springframework.web.reactive.function.server.buildAndAwait
 import java.io.File
 import java.io.InputStream
-import java.nio.charset.Charset
 import java.text.StringCharacterIterator
 import kotlin.math.abs
 import kotlin.math.sign
 import com.github.asm0dey.opdsko.common.Book as CommonBook
+
+// Data class to represent book cover data
+data class BookCoverData(
+    val inputStream: InputStream,
+    val contentType: String
+)
+
+// Data class to represent book download data
+data class BookDownloadData(
+    val resource: Any, // Can be InputStreamResource or FileSystemResource
+    val fileName: String,
+    val contentType: String,
+    val tempFile: File? = null // For temporary files that need to be deleted after use
+)
+
+// Enum to represent the result of an operation
+enum class OperationResult {
+    NOT_FOUND,
+    BAD_REQUEST,
+    SUCCESS
+}
+
+// Data class to represent the result of an operation with data
+data class OperationResultWithData<T>(
+    val result: OperationResult,
+    val data: T? = null,
+    val errorMessage: String? = null
+)
 
 @Service
 @DependsOn("springPluginManager")
@@ -272,18 +293,18 @@ class BookService(
     }
 
     /**
-     * Serves a book cover preview image from SeaweedFS or retrieves it from the book on demand.
+     * Gets a book cover preview image from SeaweedFS or retrieves it from the book on demand.
      * If the cover is not in SeaweedFS, it retrieves it from the book and caches it to SeaweedFS.
-     * If the book doesn't have a cover, it returns a 404 Not Found response.
+     * If the book doesn't have a cover, it returns NOT_FOUND.
      *
      * @param bookId The ID of the book
      * @param seaweedFSService The SeaweedFS service to use for retrieving and caching covers
-     * @return The server response with the preview image data
+     * @return OperationResultWithData containing the cover data if successful
      */
-    suspend fun getBookCover(bookId: String, seaweedFSService: SeaweedFSService): ServerResponse {
-        val book = getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+    suspend fun getBookCover(bookId: String): OperationResultWithData<BookCoverData> {
+        val book = getBookById(bookId) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
 
-        if (!book.hasCover) return ServerResponse.notFound().buildAndAwait()
+        if (!book.hasCover) return OperationResultWithData(OperationResult.NOT_FOUND)
 
         var coverInputStream = seaweedFSService.getBookCoverPreview(bookId)
         val contentType: String
@@ -295,7 +316,7 @@ class BookService(
             if (coverInputStream == null) {
                 // If we can't find the cover in SeaweedFS, let's try to get it from the book itself
                 // Cover not found in SeaweedFS, retrieve it from the book
-                val commonBook = obtainBook(book.path) ?: return ServerResponse.notFound().buildAndAwait()
+                val commonBook = obtainBook(book.path) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
 
                 // Check if the book has a cover
                 if (commonBook.cover == null || commonBook.coverContentType == null) {
@@ -303,7 +324,7 @@ class BookService(
                     // This is a case where the hasCover flag was true but the book actually doesn't have a cover
                     val updatedBook = book.copy(hasCover = false)
                     saveBook(updatedBook)
-                    return ServerResponse.notFound().buildAndAwait()
+                    return OperationResultWithData(OperationResult.NOT_FOUND)
                 }
 
                 // Cache the cover to SeaweedFS (this will also create and cache the preview)
@@ -311,102 +332,112 @@ class BookService(
 
                 // Get the newly cached cover preview from SeaweedFS
                 coverInputStream = seaweedFSService.getBookCoverPreview(bookId)
-                    ?: return ServerResponse.notFound().buildAndAwait()
+                    ?: return OperationResultWithData(OperationResult.NOT_FOUND)
 
                 contentType = commonBook.coverContentType!!
             } else {
                 // We found the original cover but not the preview, so we'll use the original
                 // Get the content type of the cover image from SeaweedFS
                 contentType =
-                    seaweedFSService.getBookCoverContentType(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+                    seaweedFSService.getBookCoverContentType(bookId) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
             }
         } else {
             // Get the content type of the cover preview image from SeaweedFS
             contentType = seaweedFSService.getBookCoverPreviewContentType(bookId)
         }
 
-        // Create an InputStreamResource with the cover image data
-        val inputStreamResource = InputStreamResource(coverInputStream)
+        // Create the book cover data
+        val bookCoverData = BookCoverData(coverInputStream, contentType)
 
-        return ServerResponse.ok()
-            .contentType(MediaType.parseMediaType(contentType))
-            .bodyValueAndAwait(inputStreamResource)
+        return OperationResultWithData(OperationResult.SUCCESS, bookCoverData)
     }
 
-    suspend fun downloadBook(bookId: String, targetFormat: String? = null): ServerResponse {
-        val book = getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
+
+    /**
+     * Prepares a book for download, optionally converting it to a different format.
+     *
+     * @param bookId The ID of the book to download
+     * @param targetFormat Optional format to convert the book to
+     * @return OperationResultWithData containing the download data if successful
+     */
+    suspend fun downloadBook(bookId: String, targetFormat: String? = null): OperationResultWithData<BookDownloadData> {
+        val book = getBookById(bookId) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
         val originalExtension = book.path.substringAfterLast('.')
 
         if (targetFormat != null) {
             val convertedFile = convertBook(book.path, targetFormat)
-                ?: return ServerResponse.badRequest().bodyValueAndAwait("Conversion to $targetFormat not supported")
+                ?: return OperationResultWithData(
+                    OperationResult.BAD_REQUEST,
+                    errorMessage = "Conversion to $targetFormat not supported"
+                )
 
             val fileName = generateFileName(book, targetFormat)
             val contentType = getContentTypeForExtension(targetFormat)
 
-            val headers = HttpHeaders().apply {
-                contentDisposition = ContentDisposition.attachment()
-                    .filename(fileName, Charset.forName("UTF-8"))
-                    .build()
-            }
-
-            return ServerResponse.ok()
-                .headers { it.addAll(headers) }
-                .contentType(MediaType.parseMediaType(contentType))
-                .bodyValueAndAwait(FileSystemResource(convertedFile))
-                .also { convertedFile.parentFile.deleteRecursively() }
+            return OperationResultWithData(
+                OperationResult.SUCCESS,
+                BookDownloadData(
+                    resource = FileSystemResource(convertedFile),
+                    fileName = fileName,
+                    contentType = contentType,
+                    tempFile = convertedFile
+                )
+            )
         }
 
         val fileName = generateFileName(book, originalExtension)
-
-        val headers = HttpHeaders().apply {
-            contentDisposition = ContentDisposition.attachment()
-                .filename(fileName, Charset.forName("UTF-8"))
-                .build()
-        }
-
+        val contentType = getContentTypeForExtension(originalExtension)
         val bookData = InputStreamResource(getBookData(book.path))
-        return ServerResponse.ok()
-            .headers { it.addAll(headers) }
-            .contentType(MediaType.parseMediaType(getContentTypeForExtension(originalExtension)))
-            .bodyValueAndAwait(bookData)
+
+        return OperationResultWithData(
+            OperationResult.SUCCESS,
+            BookDownloadData(
+                resource = bookData,
+                fileName = fileName,
+                contentType = contentType
+            )
+        )
     }
 
+
     /**
-     * Serves a full-size book cover image.
+     * Gets a full-size book cover image.
      *
      * @param bookId The ID of the book
      * @param seaweedFSService The SeaweedFS service to use for retrieving covers
-     * @return The server response with the full-size image data
+     * @return OperationResultWithData containing the full-size cover data if successful
      */
-    suspend fun getFullBookCover(bookId: String, seaweedFSService: SeaweedFSService): ServerResponse {
-        val book = getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
-        if (!book.hasCover) return ServerResponse.notFound().buildAndAwait()
+    suspend fun getFullBookCover(bookId: String): OperationResultWithData<BookCoverData> {
+        val book = getBookById(bookId) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
+        if (!book.hasCover) return OperationResultWithData(OperationResult.NOT_FOUND)
+
         val coverInputStream = seaweedFSService.getBookCover(bookId)
-        val contentType: String
 
         if (coverInputStream == null) {
-            val commonBook = obtainBook(book.path) ?: return ServerResponse.notFound().buildAndAwait()
+            val commonBook = obtainBook(book.path) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
             if (commonBook.cover == null || commonBook.coverContentType == null) {
                 val updatedBook = book.copy(hasCover = false)
                 saveBook(updatedBook)
-                return ServerResponse.notFound().buildAndAwait()
+                return OperationResultWithData(OperationResult.NOT_FOUND)
             }
+
             seaweedFSService.saveBookCover(bookId, commonBook.cover!!, commonBook.coverContentType!!)
             val newCoverInputStream = seaweedFSService.getBookCover(bookId)
-                ?: return ServerResponse.notFound().buildAndAwait()
-            val inputStreamResource = InputStreamResource(newCoverInputStream)
+                ?: return OperationResultWithData(OperationResult.NOT_FOUND)
 
-            return ServerResponse.ok()
-                .contentType(MediaType.parseMediaType(commonBook.coverContentType!!))
-                .bodyValueAndAwait(inputStreamResource)
+            return OperationResultWithData(
+                OperationResult.SUCCESS,
+                BookCoverData(newCoverInputStream, commonBook.coverContentType!!)
+            )
         } else {
-            contentType =
-                seaweedFSService.getBookCoverContentType(bookId) ?: return ServerResponse.notFound().buildAndAwait()
-            val inputStreamResource = InputStreamResource(coverInputStream)
-            return ServerResponse.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .bodyValueAndAwait(inputStreamResource)
+            val contentType = seaweedFSService.getBookCoverContentType(bookId) 
+                ?: return OperationResultWithData(OperationResult.NOT_FOUND)
+
+            return OperationResultWithData(
+                OperationResult.SUCCESS,
+                BookCoverData(coverInputStream, contentType)
+            )
         }
     }
+
 }

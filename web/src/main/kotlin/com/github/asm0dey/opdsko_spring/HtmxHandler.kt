@@ -7,7 +7,10 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
+import org.springframework.core.io.InputStreamResource
 import org.springframework.data.domain.Sort
+import org.springframework.http.ContentDisposition
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.*
@@ -24,7 +27,6 @@ import kotlin.math.min
 class HtmxHandler(
     val bookService: BookService,
     val formatConverters: List<FormatConverter>,
-    val seaweedFSService: SeaweedFSService
 ) {
 
     suspend fun homePage(req: ServerRequest): ServerResponse {
@@ -558,10 +560,10 @@ class HtmxHandler(
     }
 
     suspend fun authorSeries(req: ServerRequest): ServerResponse {
+        val encodedFullName = req.pathVariable("fullName")
         val fullName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
+            URLDecoder.decode(encodedFullName, "UTF-8")
         }
-        val encodedFullName = URLEncoder.encode(fullName, "UTF-8")
 
         val series = bookService.findSeriesByAuthorFullName(fullName).toList()
 
@@ -628,10 +630,10 @@ class HtmxHandler(
     }
 
     suspend fun authorNoSeriesBooks(req: ServerRequest): ServerResponse {
+        val encodedFullName = req.pathVariable("fullName")
         val fullName = withContext(Dispatchers.IO) {
-            URLDecoder.decode(req.pathVariable("fullName"), "UTF-8")
+            URLDecoder.decode(encodedFullName, "UTF-8")
         }
-        val encodedFullName = URLEncoder.encode(fullName, "UTF-8")
 
         val sort = Sort.by(Sort.Direction.ASC, "name")
         val books = bookService.findBooksByAuthorWithoutSeriesFullName(fullName, sort).toList()
@@ -709,12 +711,33 @@ class HtmxHandler(
         val bookId = req.pathVariable("id")
         val targetFormat = req.pathVariableOrNull("format")
 
-        return bookService.downloadBook(bookId, targetFormat)
+        val result = bookService.downloadBook(bookId, targetFormat)
+
+        return when (result.result) {
+            OperationResult.NOT_FOUND -> ServerResponse.notFound().buildAndAwait()
+            OperationResult.BAD_REQUEST -> ServerResponse.badRequest().bodyValueAndAwait(result.errorMessage ?: "Bad request")
+            OperationResult.SUCCESS -> {
+                val downloadData = result.data!!
+                val headers = HttpHeaders().apply {
+                    contentDisposition = ContentDisposition.attachment()
+                        .filename(downloadData.fileName, Charset.forName("UTF-8"))
+                        .build()
+                }
+
+                ok()
+                    .headers { it.addAll(headers) }
+                    .contentType(MediaType.parseMediaType(downloadData.contentType))
+                    .bodyValueAndAwait(downloadData.resource)
+                    .also { downloadData.tempFile?.parentFile?.deleteRecursively() }
+            }
+        }
     }
 
     suspend fun getBookCover(req: ServerRequest): ServerResponse {
         val bookId = req.pathVariable("id")
-        return bookService.getBookCover(bookId, seaweedFSService)
+        val result = bookService.getBookCover(bookId)
+
+        return handleBookCoverRequest(result)
     }
 
     suspend fun getBookInfo(req: ServerRequest): ServerResponse {
@@ -852,7 +875,24 @@ class HtmxHandler(
                 .contentType(MediaType.TEXT_HTML)
                 .bodyValueAndAwait(html)
         } else {
-            return bookService.getFullBookCover(bookId, seaweedFSService)
+            val result = bookService.getFullBookCover(bookId)
+
+            return handleBookCoverRequest(result)
+        }
+    }
+
+    private suspend fun handleBookCoverRequest(result: OperationResultWithData<BookCoverData>): ServerResponse {
+        return when (result.result) {
+            OperationResult.NOT_FOUND -> ServerResponse.notFound().buildAndAwait()
+            OperationResult.SUCCESS -> {
+                val bookCoverData = result.data!!
+                val inputStreamResource = InputStreamResource(bookCoverData.inputStream)
+                ok()
+                    .contentType(MediaType.parseMediaType(bookCoverData.contentType))
+                    .bodyValueAndAwait(inputStreamResource)
+            }
+
+            else -> ServerResponse.badRequest().buildAndAwait()
         }
     }
 }
