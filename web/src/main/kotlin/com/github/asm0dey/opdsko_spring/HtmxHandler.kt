@@ -248,12 +248,12 @@ class HtmxHandler(
                     div("card-image") {
                         figure("image is-2by3") {
                             a {
-                                attributes["hx-get"] = "/api/book/${bookWithInfo.id}/image"
+                                attributes["hx-get"] = "/common/fullimage/${bookWithInfo.id}"
                                 attributes["hx-swap"] = "innerHTML"
                                 attributes["hx-target"] = "#modal-content"
                                 attributes["_"] = "on htmx:afterOnLoad wait 10ms then add .is-active to #modal"
                                 // Use the preview image by default
-                                img(src = "/opds/image/${bookWithInfo.id}") {
+                                img(src = "/common/image/${bookWithInfo.id}") {
                                     attributes["loading"] = "lazy"
                                     attributes["alt"] = "Book cover for ${bookWithInfo.name}"
                                     attributes["title"] = "Click to view full-size image"
@@ -271,7 +271,7 @@ class HtmxHandler(
                 }
                 footer("card-footer mb-0 pb-0 is-align-items-self-end") {
                     a(classes = "card-footer-item") {
-                        attributes["hx-get"] = "/api/book/${bookWithInfo.id}/info"
+                        attributes["hx-get"] = "/common/book/${bookWithInfo.id}/info"
                         attributes["hx-target"] = "#modal-content"
                         attributes["hx-swap"] = "innerHTML"
                         attributes["_"] = "on htmx:afterOnLoad wait 10ms then add .is-active to #modal"
@@ -285,17 +285,17 @@ class HtmxHandler(
                         )
                     }
                     if (availableConverters.isEmpty()) {
-                        a("/opds/book/${bookWithInfo.id}/download", classes = "card-footer-item") { +"Download" }
+                        a("/common/book/${bookWithInfo.id}/download", classes = "card-footer-item") { +"Download" }
                     } else {
                         // Original format download
                         a(
-                            "/opds/book/${bookWithInfo.id}/download",
+                            "/common/book/${bookWithInfo.id}/download",
                             classes = "card-footer-item"
                         ) { +bookWithInfo.path.substringAfterLast('.') }
                         // Converted format downloads
                         availableConverters.forEach { converter ->
                             a(
-                                "/opds/book/${bookWithInfo.id}/download/${converter.targetFormat}",
+                                "/common/book/${bookWithInfo.id}/download/${converter.targetFormat}",
                                 classes = "card-footer-item"
                             ) { +converter.targetFormat }
                         }
@@ -707,127 +707,7 @@ class HtmxHandler(
         return BreadCrumbs(breadcrumbItems)
     }
 
-    suspend fun downloadBook(req: ServerRequest): ServerResponse {
-        val bookId = req.pathVariable("id")
-        val targetFormat = req.pathVariableOrNull("format")
 
-        val result = bookService.downloadBook(bookId, targetFormat)
-
-        return when (result.result) {
-            OperationResult.NOT_FOUND -> ServerResponse.notFound().buildAndAwait()
-            OperationResult.BAD_REQUEST -> ServerResponse.badRequest().bodyValueAndAwait(result.errorMessage ?: "Bad request")
-            OperationResult.SUCCESS -> {
-                val downloadData = result.data!!
-                val headers = HttpHeaders().apply {
-                    contentDisposition = ContentDisposition.attachment()
-                        .filename(downloadData.fileName, Charset.forName("UTF-8"))
-                        .build()
-                }
-
-                ok()
-                    .headers { it.addAll(headers) }
-                    .contentType(MediaType.parseMediaType(downloadData.contentType))
-                    .bodyValueAndAwait(downloadData.resource)
-                    .also { downloadData.tempFile?.parentFile?.deleteRecursively() }
-            }
-        }
-    }
-
-    suspend fun getBookCover(req: ServerRequest): ServerResponse {
-        val bookId = req.pathVariable("id")
-        val result = bookService.getBookCover(bookId)
-
-        return handleBookCoverRequest(result)
-    }
-
-    suspend fun getBookInfo(req: ServerRequest): ServerResponse {
-        val bookId = req.pathVariable("id")
-
-        // Get the book from the database
-        val book = bookService.getBookById(bookId) ?: return ServerResponse.notFound().buildAndAwait()
-
-        // Get the book annotation from the original file
-        val commonBook = bookService.obtainBook(book.path)
-        val annotation = commonBook?.annotation
-
-        // Create HTML for the modal content
-        val html = createHTML().div("box") {
-            div("content") {
-                // Show full-size cover if available
-                if (book.hasCover) {
-                    figure("image") {
-                        img(src = "/opds/fullimage/${book.id}") {
-                            attributes["loading"] = "lazy"
-                            attributes["alt"] = "Book cover for ${book.name}"
-                        }
-                    }
-                }
-
-                h3 { +book.name }
-
-                if (book.authors.isNotEmpty()) {
-                    div("tags") {
-                        strong { +"Author(s): " }
-                        book.authors.forEach { author ->
-                            a(
-                                href = "/api/author/view/${
-                                    URLEncoder.encode(
-                                        author.fullName,
-                                        Charset.defaultCharset()
-                                    )
-                                }",
-                                classes = "tag is-info"
-                            ) {
-                                +"${author.firstName} ${author.lastName}"
-                            }
-                        }
-                    }
-                }
-
-                if (book.sequence != null) {
-                    p {
-                        strong { +"Series: " }
-                        a(href = "/api/series/${URLEncoder.encode(book.sequence, Charset.defaultCharset())}") {
-                            +book.sequence
-                        }
-                        if (book.sequenceNumber != null) {
-                            +" (#${book.sequenceNumber})"
-                        }
-                    }
-                }
-
-                if (book.genres.isNotEmpty()) {
-                    div("tags") {
-                        strong { +"Genres: " }
-                        book.genres.forEach { genre ->
-                            span("tag") {
-                                +genre
-                            }
-                        }
-                    }
-                }
-
-                p {
-                    strong { +"File size: " }
-                    +"${(book.size / 1024)} KB"
-                }
-
-                // Show book description if available
-                if (!annotation.isNullOrEmpty()) {
-                    div {
-                        strong { +"Description: " }
-                        div("book-description") {
-                            +annotation
-                        }
-                    }
-                }
-            }
-        }
-
-        return ok()
-            .contentType(MediaType.TEXT_HTML)
-            .bodyValueAndAwait(html)
-    }
 
     suspend fun seriesBooks(req: ServerRequest): ServerResponse {
         val seriesName = withContext(Dispatchers.IO) {
@@ -857,42 +737,4 @@ class HtmxHandler(
         return ok(smartHtml(req, x, breadcrumbs))
     }
 
-    suspend fun getFullBookCover(req: ServerRequest): ServerResponse {
-        val bookId = req.pathVariable("id")
-        val isHtmxRequest = req.headers().firstHeader("HX-Request") == "true"
-
-        if (isHtmxRequest) {
-            val html = createHTML().div("box") {
-                figure("image") {
-                    img(src = "/opds/fullimage/${bookId}") {
-                        attributes["loading"] = "lazy"
-                        attributes["alt"] = "Full-size book cover"
-                    }
-                }
-            }
-
-            return ok()
-                .contentType(MediaType.TEXT_HTML)
-                .bodyValueAndAwait(html)
-        } else {
-            val result = bookService.getFullBookCover(bookId)
-
-            return handleBookCoverRequest(result)
-        }
-    }
-
-    private suspend fun handleBookCoverRequest(result: OperationResultWithData<BookCoverData>): ServerResponse {
-        return when (result.result) {
-            OperationResult.NOT_FOUND -> ServerResponse.notFound().buildAndAwait()
-            OperationResult.SUCCESS -> {
-                val bookCoverData = result.data!!
-                val inputStreamResource = InputStreamResource(bookCoverData.inputStream)
-                ok()
-                    .contentType(MediaType.parseMediaType(bookCoverData.contentType))
-                    .bodyValueAndAwait(inputStreamResource)
-            }
-
-            else -> ServerResponse.badRequest().buildAndAwait()
-        }
-    }
 }

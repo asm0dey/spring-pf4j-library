@@ -12,7 +12,7 @@ import java.net.URI
 class RoutingConfig {
 
     @Bean
-    fun router(htmxHandler: HtmxHandler, scanner: Scanner) = coRouter {
+    fun router(htmxHandler: HtmxHandler, commonHandler: CommonHandler, scanner: Scanner) = coRouter {
         GET("/") { ServerResponse.permanentRedirect(URI("/api")).buildAndAwait() }
         resources("/**", ClassPathResource("static/"))
         GET("/api").nest {
@@ -23,7 +23,7 @@ class RoutingConfig {
             GET("/author").nest {
                 GET("", htmxHandler::authorFirstLevel)
                 GET("/{prefix}", htmxHandler::authorPrefixLevel)
-                GET("/view/").nest {
+                GET("/view").nest {
                     GET("/{fullName}").nest {
                         GET("", htmxHandler::authorView)
                         GET("/series", htmxHandler::authorSeries)
@@ -35,12 +35,15 @@ class RoutingConfig {
             }
             GET("/series/{series}", htmxHandler::seriesBooks)
         }
-        GET("/opds/book/{id}/download", htmxHandler::downloadBook)
-        GET("/opds/book/{id}/download/{format}", htmxHandler::downloadBook)
-        GET("/opds/image/{id}", htmxHandler::getBookCover)
-        GET("/opds/fullimage/{id}", htmxHandler::getFullBookCover)
-        GET("/api/book/{id}/image", htmxHandler::getFullBookCover)
-        GET("/api/book/{id}/info", htmxHandler::getBookInfo)
+        GET("/common").nest {
+            GET("/book/{id}").nest {
+                GET("/download", commonHandler::downloadBook)
+                GET("/download/{format}", commonHandler::downloadBook)
+                GET("/info", commonHandler::getBookInfo)
+            }
+            GET("/image/{id}", commonHandler::getBookCover)
+            GET("/fullimage/{id}", commonHandler::getFullBookCover)
+        }
         POST("/scan", scanner::scan)
         POST("/cleanup", scanner::cleanup)
         POST("/resync", scanner::resyncMeilisearch)

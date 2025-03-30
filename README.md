@@ -136,7 +136,7 @@ Or use environment variables:
 1. Configure your book sources in the `application.yml` file.
 2. Start the application.
 3. The application will scan your sources and index your books.
-4. Access the OPDS catalog at http://localhost:8080/opds
+4. Access the OPDS catalog at http://localhost:8080/common
 5. Connect your e-book reader application to the OPDS catalog.
 
 ## Building a Docker Image
