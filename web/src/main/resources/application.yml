@@ -15,6 +15,17 @@ spring:
       port: 27017
       password: password
       username: postgres
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:your-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:your-client-secret}
+            scope:
+              - email
+              - profile
 #mongock:
 #  migration-scan-package: com.github.asm0dey.opdsko_spring.migrations
 #  runner-type: ApplicationRunner
@@ -82,3 +93,18 @@ seaweedfs:
   filer-port: 8888
   host: localhost
   port: 9333
+
+# Authentication configuration
+# Environment variables:
+# - AUTH_ENABLED: Set to "true" to enable authentication (default: false)
+# - AUTH_ALLOWED_IPS: Comma-separated list of IP addresses or subnets that can bypass authentication
+#   Example: AUTH_ALLOWED_IPS=127.0.0.1,192.168.1.0/24,::1
+# - AUTH_ALLOWED_EMAILS: Comma-separated list of email addresses that are allowed to authenticate
+#   Example: AUTH_ALLOWED_EMAILS=user1@example.com,user2@example.com
+# - AUTH_APPLICATION_URL: The URL of the application, used for OAuth2 redirect
+#   Example: AUTH_APPLICATION_URL=http://localhost:8080
+auth:
+  enabled: ${AUTH_ENABLED:false}
+  allowed-ips: ${AUTH_ALLOWED_IPS:127.0.0.1,::1,192.168.0.0/24,10.0.0.0/8,2001:db8::/32}
+  allowed-emails: ${AUTH_ALLOWED_EMAILS:pavel.finkelshtein@gmail.com}
+  application-url: ${AUTH_APPLICATION_URL:http://localhost:8080}
