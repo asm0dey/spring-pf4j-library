@@ -2,22 +2,12 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
 //    alias(libs.plugins.spring.dependencies)
     alias(libs.plugins.spring.boot) apply false
-    alias(libs.plugins.graalvm)
 }
 repositories {
     mavenCentral()
 }
 allprojects {
     plugins.apply("org.jetbrains.kotlin.jvm")
-//    plugins.apply("io.spring.dependency-management")
-    plugins.apply("org.graalvm.buildtools.native")
-    /*
-        dependencyManagement {
-            imports {
-                mavenBom(BOM_COORDINATES)
-            }
-        }
-    */
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(21)
