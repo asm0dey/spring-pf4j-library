@@ -56,7 +56,9 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
     fun findAuthorsByPrefix(prefix: String): Flow<AuthorResult>
 
     @Query("{ 'authors': { \$elemMatch: { 'fullName': ?0 } } }")
-    fun findBooksByAuthorFullName(fullName: String, sort: Sort): Flow<Book>
+    fun findBooksByAuthorFullName(fullName: String, pageable: Pageable): Flow<Book>
+
+    suspend fun countByAuthorsFullName(fullName: String): Long
 
 
     @Query("{ 'authors': { \$elemMatch: { 'fullName': ?0 } }, 'sequence': null }")
@@ -73,8 +75,6 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
 
     @Query("{ 'sequence': ?0 }")
     fun findBooksBySeries(series: String, sort: Sort): Flow<Book>
-
-    fun findAllByPathIn(paths: List<String>): Flow<Book>
 
     fun findAllBy():Flow<BookIndexItem>
 }
