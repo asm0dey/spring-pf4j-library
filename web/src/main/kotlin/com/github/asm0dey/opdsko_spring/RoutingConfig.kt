@@ -20,14 +20,19 @@ class RoutingConfig {
             GET("/search", htmxHandler::search)
             GET("/new", htmxHandler::new)
 
-            // Author navigation routes
-            GET("/author", htmxHandler::authorFirstLevel)
-            GET("/author/{prefix}", htmxHandler::authorPrefixLevel)
-            GET("/author/view/{fullName}", htmxHandler::authorView)
-            GET("/author/view/{fullName}/series", htmxHandler::authorSeries)
-            GET("/author/view/{fullName}/series/{series}", htmxHandler::authorSeriesBooks)
-            GET("/author/view/{fullName}/noseries", htmxHandler::authorNoSeriesBooks)
-            GET("/author/view/{fullName}/all", htmxHandler::authorAllBooks)
+            GET("/author").nest {
+                GET("", htmxHandler::authorFirstLevel)
+                GET("/{prefix}", htmxHandler::authorPrefixLevel)
+                GET("/view/").nest {
+                    GET("/{fullName}").nest {
+                        GET("", htmxHandler::authorView)
+                        GET("/series", htmxHandler::authorSeries)
+                        GET("/series/{series}", htmxHandler::authorSeriesBooks)
+                        GET("/noseries", htmxHandler::authorNoSeriesBooks)
+                        GET("/all", htmxHandler::authorAllBooks)
+                    }
+                }
+            }
             GET("/series/{series}", htmxHandler::seriesBooks)
         }
         GET("/opds/book/{id}/download", htmxHandler::downloadBook)
