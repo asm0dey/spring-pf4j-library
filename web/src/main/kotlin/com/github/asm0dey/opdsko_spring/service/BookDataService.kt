@@ -63,6 +63,17 @@ class BookDataService(
     suspend fun findBooksBySeries(series: String, sort: Sort) = bookMongoRepository.findBooksBySeries(series, sort)
 
     /**
+     * Finds books by series and author.
+     *
+     * @param series The series name
+     * @param fullName The author's full name
+     * @param sort The sort order
+     * @return A flow of books in the series by the author
+     */
+    suspend fun findBooksBySeriesAndAuthorFullName(series: String, fullName: String, sort: Sort) = 
+        bookMongoRepository.findBooksBySeriesAndAuthorFullName(series, fullName, sort)
+
+    /**
      * Finds books by author without series.
      *
      * @param fullName The author's full name

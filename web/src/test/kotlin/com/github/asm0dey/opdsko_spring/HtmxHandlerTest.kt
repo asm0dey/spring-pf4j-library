@@ -363,7 +363,7 @@ class HtmxHandlerTest {
             .pathVariable("series", encodedSeriesName)
             .build()
 
-        `when`(bookService.findBooksBySeries(seriesName, Sort.by(Sort.Direction.ASC, "sequenceNumber")))
+        `when`(bookService.findBooksBySeriesAndAuthorFullName(seriesName, fullName, Sort.by(Sort.Direction.ASC, "sequenceNumber")))
             .thenReturn(flowOf(*testBooks.toTypedArray()))
         `when`(bookService.imageTypes(testBooks)).thenReturn(testBooks.associate { it.id!! to "image/jpeg" })
         `when`(bookService.shortDescriptions(testBooks)).thenReturn(testBooks.associate { it.id!! to "Description for ${it.name}" })

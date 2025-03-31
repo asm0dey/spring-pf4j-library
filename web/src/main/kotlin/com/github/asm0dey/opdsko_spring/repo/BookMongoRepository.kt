@@ -77,5 +77,8 @@ interface BookMongoRepository : CoroutineCrudRepository<Book, String>, Coroutine
     @Query("{ 'sequence': ?0 }")
     fun findBooksBySeries(series: String, sort: Sort): Flow<Book>
 
+    @Query("{ 'sequence': ?0, 'authors': { \$elemMatch: { 'fullName': ?1 } } }")
+    fun findBooksBySeriesAndAuthorFullName(series: String, fullName: String, sort: Sort): Flow<Book>
+
     fun findAllBy():Flow<BookIndexItem>
 }
