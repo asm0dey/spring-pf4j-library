@@ -40,7 +40,6 @@ class CommonHandler(private val bookService: BookService) {
                     .headers { it.addAll(headers) }
                     .contentType(MediaType.parseMediaType(downloadData.contentType))
                     .bodyValueAndAwait(downloadData.resource)
-                    .also { downloadData.tempFile?.parentFile?.deleteRecursively() }
             }
         }
     }
