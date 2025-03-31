@@ -62,7 +62,7 @@ class Fb2ToEpubConverterPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
                     }
                 } else null
             if (arch != null) {
-                val targetFile = "fb2c-$FB2C_VERSION.zip"
+                val targetFile = "/tmp/fb2c-$FB2C_VERSION.zip"
                 if (!File(targetFile).exists()) {
                     log.info(
                         "It seems that there is no archive of fb2c next to the executable, downloading it…"
@@ -79,14 +79,15 @@ class Fb2ToEpubConverterPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
                 |Unpacking…
             """.trimMargin()
                     )
+                    val targetDir = File("/tmp/converter").apply { mkdirs() }
                     ZipFile(targetFile).use {
                         val myHeader = it.fileHeaders.first { it.fileName.startsWith("fb2c") }
                         it.extractFile(
                             myHeader,
-                            it.file.absoluteFile.parentFile.absolutePath,
+                            targetDir.absolutePath,
                             myHeader.fileName.substringAfter('/')
                         )
-                        posixSetAccessible(myHeader.fileName)
+                        posixSetAccessible("${targetDir.absolutePath}/${myHeader.fileName}")
                     }
                     setConfig()
                     log.info("Unpacked. Resuming application launch.")
@@ -97,25 +98,33 @@ class Fb2ToEpubConverterPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     private fun setConfig() {
-        if (!File("fb2c.conf.toml").exists())
+        val configFile = File("/tmp/converter/fb2c.conf.toml")
+        if (!configFile.exists())
             this::class
                 .java
                 .classLoader
                 .getResourceAsStream("fb2c.conf.toml")
                 ?.buffered()
                 ?.use { inp ->
-                    FileOutputStream("fb2c.conf.toml").buffered().use { out ->
+                    configFile.parentFile.mkdirs()
+                    FileOutputStream(configFile).buffered().use { out ->
                         inp.copyTo(out)
                     }
-                    posixSetAccessible("fb2c.conf.toml")
+                    posixSetAccessible(configFile.absolutePath)
                 }
     }
 
     private fun downloadFile(url: URL, outputFileName: String) {
-        Channels.newChannel(url.openStream()).use { rbc ->
-            FileOutputStream(outputFileName).use { fos ->
-                fos.channel.transferFrom(rbc, 0, Long.MAX_VALUE)
+        try {
+            Channels.newChannel(url.openStream()).use { readableByteChannel ->
+                FileOutputStream(outputFileName).use { fileOutputStream ->
+                    fileOutputStream.channel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE)
+                }
             }
+            log.info("File downloaded successfully: $outputFileName")
+        } catch (e: Exception) {
+            log.error("Failed to download file: ${url.toExternalForm()}", e)
+            throw e
         }
     }
 
