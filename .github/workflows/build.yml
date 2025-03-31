@@ -57,24 +57,16 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Set up Docker Buildx
-      if: startsWith(github.ref, 'refs/tags/v')
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build and push Docker image
+    - name: Build and push Docker image with bootBuildImage
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
         # Extract version from tag (remove 'v' prefix)
         VERSION=${GITHUB_REF#refs/tags/v}
 
-        # Build the application first to ensure we have the JAR file
-        ./gradlew :web:build
-
-        # Build and push Docker image using Docker build
-        docker buildx build \
-          --platform linux/amd64,linux/arm64 \
-          -t ghcr.io/${{ github.repository_owner }}/opdsko:$VERSION \
-          -t ghcr.io/${{ github.repository_owner }}/opdsko:latest \
-          --push \
-          -f Dockerfile.fromjar \
-          .
+        ./gradlew :web:bootBuildImage \
+          -PbootBuildImage.imageName=ghcr.io/${{ github.repository_owner }}/opdsko:$VERSION \
+          -PbootBuildImage.tags=ghcr.io/${{ github.repository_owner }}/opdsko:latest \
+          -PbootBuildImage.publish=false
+        
+        docker push ghcr.io/${{ github.repository_owner }}/opdsko:$VERSION
+        docker push ghcr.io/${{ github.repository_owner }}/opdsko:latest

@@ -4,13 +4,13 @@ import com.meilisearch.sdk.Client
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.springframework.data.annotation.Id
-import org.springframework.stereotype.Repository
+import org.springframework.stereotype.Component
 
 
 @Serializable
 data class BookIndexItem(@Id val id: String, val name: String)
 
-@Repository
+@Component
 class Meilisearch(val client: Client) {
 
     fun saveBooks(books: List<BookIndexItem>) {
