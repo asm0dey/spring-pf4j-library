@@ -1,5 +1,6 @@
-package com.github.asm0dey.opdsko_spring
+package com.github.asm0dey.opdsko_spring.repo
 
+import com.github.asm0dey.opdsko_spring.*
 import kotlinx.coroutines.flow.Flow
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort

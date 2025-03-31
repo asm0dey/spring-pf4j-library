@@ -1,12 +1,10 @@
-package com.github.asm0dey.opdsko_spring
+package com.github.asm0dey.opdsko_spring.repo
 
+import com.github.asm0dey.opdsko_spring.Book
 import com.meilisearch.sdk.Client
 import com.meilisearch.sdk.SearchRequest
 import com.meilisearch.sdk.json.GsonJsonHandler
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.flow.toSet
 import kotlinx.serialization.json.Json
 import org.springframework.context.annotation.Lazy
 import org.springframework.data.domain.PageRequest

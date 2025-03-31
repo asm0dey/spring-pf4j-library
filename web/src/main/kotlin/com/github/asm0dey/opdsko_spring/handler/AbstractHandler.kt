@@ -2,7 +2,7 @@ package com.github.asm0dey.opdsko_spring.handler
 
 import com.github.asm0dey.opdsko.common.FormatConverter
 import com.github.asm0dey.opdsko_spring.Book
-import com.github.asm0dey.opdsko_spring.BookService
+import com.github.asm0dey.opdsko_spring.service.BookService
 import com.github.asm0dey.opdsko_spring.model.BookTileViewModel
 import com.github.asm0dey.opdsko_spring.model.BreadcrumbsViewModel
 import com.github.asm0dey.opdsko_spring.model.NavTileViewModel

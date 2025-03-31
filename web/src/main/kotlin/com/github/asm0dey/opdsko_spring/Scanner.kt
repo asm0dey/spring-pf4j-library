@@ -1,5 +1,10 @@
 package com.github.asm0dey.opdsko_spring
 
+import com.github.asm0dey.opdsko_spring.repo.BookMongoRepository
+import com.github.asm0dey.opdsko_spring.repo.BookRepo
+import com.github.asm0dey.opdsko_spring.repo.Meilisearch
+import com.github.asm0dey.opdsko_spring.service.BookService
+import com.github.asm0dey.opdsko_spring.service.SeaweedFSService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
