@@ -6,18 +6,15 @@ import com.meilisearch.sdk.SearchRequest
 import com.meilisearch.sdk.json.GsonJsonHandler
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
-import org.springframework.context.annotation.Lazy
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import org.springframework.stereotype.Repository
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 data class PagedBooks(val books: List<Book>, val total: Long)
 
 
-@Repository
-@Transactional(readOnly = true)
-@Lazy(false)
+@Service
 class BookRepo(
     private val meilisearch: Client,
     private val bookMongoRepository: BookMongoRepository,

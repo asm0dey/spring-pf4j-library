@@ -83,12 +83,33 @@ tasks.named<BootJar>("bootJar") {
 tasks.named<BootBuildImage>("bootBuildImage") {
     environment.putAll(
         mapOf(
-            "BP_JVM_VERSION" to "23",
-            "BP_NATIVE_IMAGE" to "false",
-            "BP_JVM_CDS_ENABLED" to "true",
+            "BP_JVM_VERSION" to "24",
+            "BPL_JVM_CDS_ENABLED" to "true",
+            "BP_JVM_JLINK_ENABLED" to "true",
             "BP_SPRING_AOT_ENABLED" to "true",
             "BP_JVM_TYPE" to "JRE"
         )
     )
-    imageName.set("asm0dey/${project.name}:${project.version}")
+
+    // Check for properties passed from the GitHub Actions workflow
+    val customImageName = project.findProperty("bootBuildImage.imageName") as String?
+    val customTags = project.findProperty("bootBuildImage.tags") as String?
+    val shouldPublish = project.findProperty("bootBuildImage.publish") as String?
+
+    // Set image name - use custom value if provided, otherwise use default
+    if (customImageName != null) {
+        imageName.set(customImageName)
+    } else {
+        imageName.set("ghcr.io/asm0dey/opdsko:${project.version}")
+    }
+
+    // Set tags - use custom value if provided, otherwise use default
+    if (customTags != null) {
+        tags.set(customTags.split(",").toList())
+    } else {
+        tags.add("ghcr.io/asm0dey/opdsko:latest")
+    }
+
+    // Enable publishing to a container registry if specified
+    publish.set(shouldPublish?.toBoolean() ?: false)
 }
