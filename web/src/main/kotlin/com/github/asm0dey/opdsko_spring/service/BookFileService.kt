@@ -129,7 +129,12 @@ class BookFileService(
                     // Check if the size is 0 and get the real size if needed
                     var bookSize = book.size
                     if (bookSize == 0L) {
-                        bookSize = getRealBookSize(book.path)
+                        bookSize = try {
+                            getRealBookSize(book.path)
+                        } catch (e:Exception){
+                            logger.error("Unable to get real size for book ${book.id} from path ${book.path}", e)
+                            0L
+                        }
                         if (bookSize > 0) {
                             // Update the MongoDB record with the real size
                             val updatedBook = book.copy(size = bookSize)
