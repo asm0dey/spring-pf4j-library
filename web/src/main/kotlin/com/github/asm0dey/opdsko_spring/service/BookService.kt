@@ -7,8 +7,6 @@ import kotlinx.coroutines.flow.Flow
 import org.springframework.context.annotation.DependsOn
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
-import java.io.File
-import java.io.InputStream
 
 /**
  * Main service for book operations.
@@ -48,14 +46,6 @@ class BookService(
         bookFileService.obtainBooks(absolutePath)
 
     /**
-     * Gets the real size of a book.
-     *
-     * @param path The path to the book
-     * @return The size of the book in bytes
-     */
-    fun getRealBookSize(path: String): Long = bookFileService.getRealBookSize(path)
-
-    /**
      * Gets short descriptions for a list of books.
      *
      * @param bookWithInfos The list of books
@@ -71,24 +61,6 @@ class BookService(
      * @return The book, or null if not found
      */
     suspend fun getBookById(id: String): Book? = bookDataService.getBookById(id)
-
-    /**
-     * Gets the data of a book.
-     *
-     * @param path The path to the book
-     * @return The input stream of the book data
-     */
-    fun getBookData(path: String): InputStream = bookFileService.getBookData(path)
-
-    /**
-     * Converts a book from one format to another.
-     *
-     * @param path The path to the book
-     * @param targetFormat The target format
-     * @return The converted book file, or null if conversion is not possible
-     */
-    fun convertBook(path: String, targetFormat: String): File? = 
-        bookConversionService.convertBook(path, targetFormat)
 
     /**
      * Checks if a book exists.
@@ -198,33 +170,6 @@ class BookService(
      */
     suspend fun findBooksByAuthorFullName(fullName: String, page: Int): PagedBooks =
         bookDataService.findBooksByAuthorFullName(fullName, page)
-
-    /**
-     * Saves a book to the database.
-     *
-     * @param book The book to save
-     * @return The saved book
-     */
-    suspend fun saveBook(book: Book) = bookDataService.saveBook(book)
-
-    /**
-     * Generates a file name for a book.
-     *
-     * @param book The book
-     * @param extension The file extension
-     * @return The generated file name
-     */
-    fun generateFileName(book: Book, extension: String): String =
-        bookConversionService.generateFileName(book, extension)
-
-    /**
-     * Gets the content type for a file extension.
-     *
-     * @param extension The file extension
-     * @return The content type
-     */
-    fun getContentTypeForExtension(extension: String): String = 
-        bookConversionService.getContentTypeForExtension(extension)
 
     /**
      * Gets a book cover preview image.
