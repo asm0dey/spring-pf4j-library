@@ -5,6 +5,7 @@ import com.github.asm0dey.opdsko.common.DelegatingBookHandler
 import com.github.asm0dey.opdsko_spring.Book
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.File
 import java.io.InputStream
@@ -23,6 +24,8 @@ class BookFileService(
     private val seaweedFSService: SeaweedFSService,
     private val bookDataService: BookDataService
 ) {
+    private val logger = LoggerFactory.getLogger(BookFileService::class.java)
+
     /**
      * Gets the cover content types for a list of books.
      * If available, retrieves the content type from SeaweedFS.
@@ -31,17 +34,23 @@ class BookFileService(
      * @param books The list of books
      * @return A map of book IDs to cover content types
      */
-    fun imageTypes(books: List<Book>) = books
+    fun imageTypes(books: List<Book>): Map<String, String?> = books
         .map { Pair(it.id, it) }
         .associate { (id, book) ->
             if (!book.hasCover) return@associate id!! to null
             var type = try {
                 seaweedFSService.getBookCoverContentType(id!!)
             } catch (e: Exception) {
+                logger.error("Unable to get cover content type for book $id from Seaweed", e)
                 null
             }
             if (type == null || type == "application/octet-stream") {
-                val fb = obtainBook(book.path)
+                val fb = try {
+                    obtainBook(book.path)
+                } catch (e: Exception) {
+                    logger.error("Unable to get cover content type for book $id from file ${book.path}", e)
+                    return@associate id!! to null
+                }
                 if (fb?.cover != null && fb.coverContentType != null) {
                     seaweedFSService.saveBookCover(id!!, fb.cover!!, fb.coverContentType!!)
                     type = fb.coverContentType
@@ -109,7 +118,7 @@ class BookFileService(
      * @param bookWithInfos The list of books
      * @return A map of book IDs to short descriptions
      */
-    suspend fun shortDescriptions(bookWithInfos: List<Book>) =
+    suspend fun shortDescriptions(bookWithInfos: List<Book>): Map<String, String> =
         bookWithInfos.map { it.id to it }
             .associate { (id, book) ->
                 // First try to get the description from SeaweedFS
@@ -132,7 +141,12 @@ class BookFileService(
                     val seq = book.sequence
                     val seqNo = book.sequenceNumber
 
-                    val fb = obtainBook(book.path)
+                    val fb = try {
+                        obtainBook(book.path)
+                    } catch (e: Exception) {
+                        logger.error("Unable to obtain book ${book.id} from path ${book.path}", e)
+                        null
+                    }
 
                     val descr = fb?.annotation ?: ""
                     text = buildString {
@@ -239,7 +253,8 @@ class BookFileService(
                 // We found the original cover but not the preview, so we'll use the original
                 // Get the content type of the cover image from SeaweedFS
                 contentType =
-                    seaweedFSService.getBookCoverContentType(bookId) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
+                    seaweedFSService.getBookCoverContentType(bookId)
+                        ?: return OperationResultWithData(OperationResult.NOT_FOUND)
             }
         } else {
             // Get the content type of the cover preview image from SeaweedFS
@@ -281,7 +296,7 @@ class BookFileService(
                 BookCoverData(newCoverInputStream, commonBook.coverContentType!!)
             )
         } else {
-            val contentType = seaweedFSService.getBookCoverContentType(bookId) 
+            val contentType = seaweedFSService.getBookCoverContentType(bookId)
                 ?: return OperationResultWithData(OperationResult.NOT_FOUND)
 
             return OperationResultWithData(

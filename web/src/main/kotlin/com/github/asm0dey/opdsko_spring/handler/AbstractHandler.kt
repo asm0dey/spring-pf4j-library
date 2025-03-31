@@ -2,14 +2,15 @@ package com.github.asm0dey.opdsko_spring.handler
 
 import com.github.asm0dey.opdsko.common.FormatConverter
 import com.github.asm0dey.opdsko_spring.Book
-import com.github.asm0dey.opdsko_spring.service.BookService
 import com.github.asm0dey.opdsko_spring.model.BookTileViewModel
 import com.github.asm0dey.opdsko_spring.model.BreadcrumbsViewModel
 import com.github.asm0dey.opdsko_spring.model.NavTileViewModel
+import com.github.asm0dey.opdsko_spring.service.BookService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -25,6 +26,8 @@ abstract class AbstractHandler(
     private val bookService: BookService,
     private val formatConverters: List<FormatConverter>
 ) {
+    private val logger = LoggerFactory.getLogger(AbstractHandler::class.java)
+
     // Abstract methods that must be implemented by subclasses
     protected abstract fun NavTile(model: NavTileViewModel): String
     protected abstract fun BookTile(model: BookTileViewModel, additionalFormats: List<String>): String
@@ -307,7 +310,7 @@ abstract class AbstractHandler(
         val seriesName = withContext(Dispatchers.IO) {
             URLDecoder.decode(encodedSeries, "UTF-8")
         }
-        val bookTiles = generateBookTilesForSeries(seriesName)
+        val bookTiles = generateBookTilesForSeriesAndAuthor(seriesName, fullName)
 
         val breadcrumbs = Breadcrumbs(
             BreadcrumbsViewModel(
@@ -440,9 +443,25 @@ abstract class AbstractHandler(
         return books.joinToString("") { book ->
             val model = BookTileViewModel(book, images[book.id], descriptions[book.id])
             BookTile(
-                BookTileViewModel(book, images[book.id], descriptions[book.id]), formatConverters
-                    .filter { it.canConvert(model.book.path.substringAfterLast('.')) }
-                    .map { it.targetFormat })
+                BookTileViewModel(book, images[book.id], descriptions[book.id]), additionalFormats(model.book.path)
+            )
+        }
+    }
+
+    private suspend fun AbstractHandler.generateBookTilesForSeriesAndAuthor(
+        seriesName: String,
+        authorFullName: String
+    ): String {
+        val sort = Sort.by(Sort.Direction.ASC, "sequenceNumber")
+        val books = bookService.findBooksBySeriesAndAuthorFullName(seriesName, authorFullName, sort).toList()
+
+        val images = getBookImages(books)
+        val descriptions = getBookDescriptions(books)
+
+        return books.joinToString("") { book ->
+            BookTile(
+                BookTileViewModel(book, images[book.id], descriptions[book.id]), additionalFormats(book.path)
+            )
         }
     }
 
