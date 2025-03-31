@@ -1,6 +1,9 @@
 package com.github.asm0dey.opdsko_spring
 
-import com.github.asm0dey.opdsko_spring.OperationResult.*
+import com.github.asm0dey.opdsko_spring.service.BookCoverData
+import com.github.asm0dey.opdsko_spring.service.BookService
+import com.github.asm0dey.opdsko_spring.service.OperationResult.*
+import com.github.asm0dey.opdsko_spring.service.OperationResultWithData
 import kotlinx.html.*
 import kotlinx.html.stream.createHTML
 import org.springframework.core.io.InputStreamResource

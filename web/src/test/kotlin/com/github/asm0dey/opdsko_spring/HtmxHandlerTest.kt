@@ -3,6 +3,8 @@ package com.github.asm0dey.opdsko_spring
 import com.github.asm0dey.opdsko.common.FormatConverter
 import com.github.asm0dey.opdsko_spring.handler.HtmxHandler
 import com.github.asm0dey.opdsko_spring.renderer.HtmxViewRenderer
+import com.github.asm0dey.opdsko_spring.repo.PagedBooks
+import com.github.asm0dey.opdsko_spring.service.BookService
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach

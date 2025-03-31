@@ -1,16 +1,10 @@
-package com.github.asm0dey.opdsko_spring
+package com.github.asm0dey.opdsko_spring.service
 
 import com.github.asm0dey.opdsko.common.BookHandler
 import com.github.asm0dey.opdsko.common.DelegatingBookHandler
-import com.github.asm0dey.opdsko.common.FormatConverter
+import com.github.asm0dey.opdsko_spring.Book
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.toList
-import org.springframework.context.annotation.DependsOn
-import org.springframework.core.io.FileSystemResource
-import org.springframework.core.io.InputStreamResource
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import java.io.File
 import java.io.InputStream
@@ -19,43 +13,15 @@ import kotlin.math.abs
 import kotlin.math.sign
 import com.github.asm0dey.opdsko.common.Book as CommonBook
 
-// Data class to represent book cover data
-data class BookCoverData(
-    val inputStream: InputStream,
-    val contentType: String
-)
-
-// Data class to represent book download data
-data class BookDownloadData(
-    val resource: Any, // Can be InputStreamResource or FileSystemResource
-    val fileName: String,
-    val contentType: String,
-    val tempFile: File? = null // For temporary files that need to be deleted after use
-)
-
-// Enum to represent the result of an operation
-enum class OperationResult {
-    NOT_FOUND,
-    BAD_REQUEST,
-    SUCCESS
-}
-
-// Data class to represent the result of an operation with data
-data class OperationResultWithData<T>(
-    val result: OperationResult,
-    val data: T? = null,
-    val errorMessage: String? = null
-)
-
+/**
+ * Service responsible for file operations related to books.
+ */
 @Service
-@DependsOn("springPluginManager")
-class BookService(
-    val bookHandlers: List<BookHandler>,
-    val delegates: List<DelegatingBookHandler>,
-    val bookMongoRepository: BookMongoRepository,
-    val formatConverters: List<FormatConverter>,
-    val bookRepo: BookRepo,
-    val seaweedFSService: SeaweedFSService
+class BookFileService(
+    private val bookHandlers: List<BookHandler>,
+    private val delegates: List<DelegatingBookHandler>,
+    private val seaweedFSService: SeaweedFSService,
+    private val bookDataService: BookDataService
 ) {
     /**
      * Gets the cover content types for a list of books.
@@ -63,7 +29,6 @@ class BookService(
      * If not available in SeaweedFS, retrieves it from the book and saves it to SeaweedFS.
      *
      * @param books The list of books
-     * @param seaweedFSService The SeaweedFS service to use
      * @return A map of book IDs to cover content types
      */
     fun imageTypes(books: List<Book>) = books
@@ -86,6 +51,12 @@ class BookService(
             id!! to type
         }
 
+    /**
+     * Obtains a book from a path.
+     *
+     * @param path The path to the book
+     * @return The book, or null if not found
+     */
     fun obtainBook(path: String): CommonBook? {
         val delegatedBook = delegates
             .firstOrNull { it.supportsPath(path) }
@@ -98,7 +69,12 @@ class BookService(
         }
     }
 
-
+    /**
+     * Obtains books from a path.
+     *
+     * @param absolutePath The absolute path to the books
+     * @return A flow of books and their sizes
+     */
     fun obtainBooks(absolutePath: String): Flow<Pair<CommonBook, Long>> {
         val file = File(absolutePath)
         return delegates
@@ -114,23 +90,12 @@ class BookService(
                 .asFlow()
     }
 
-    fun Long.humanReadable(): String {
-        val absB = if (this == Long.MIN_VALUE) Long.MAX_VALUE else abs(this)
-        if (absB < 1024) {
-            return "$this B"
-        }
-        var value = absB
-        val ci = StringCharacterIterator("KMGTPE")
-        var i = 40
-        while (i >= 0 && absB > 0xfffccccccccccccL shr i) {
-            value = value shr 10
-            ci.next()
-            i -= 10
-        }
-        value *= sign.toLong()
-        return String.format("%.1f %ciB", value / 1024.0, ci.current())
-    }
-
+    /**
+     * Gets the real size of a book.
+     *
+     * @param path The path to the book
+     * @return The size of the book in bytes
+     */
     fun getRealBookSize(path: String): Long = delegates
         .firstOrNull { it.supportsPath(path) }
         ?.obtainBookSize(path)
@@ -159,7 +124,7 @@ class BookService(
                         if (bookSize > 0) {
                             // Update the MongoDB record with the real size
                             val updatedBook = book.copy(size = bookSize)
-                            bookMongoRepository.save(updatedBook)
+                            bookDataService.saveBook(updatedBook)
                         }
                     }
 
@@ -185,10 +150,12 @@ class BookService(
                 id to text
             }
 
-    suspend fun getBookById(id: String): Book? {
-        return bookMongoRepository.findById(id)
-    }
-
+    /**
+     * Gets the data of a book.
+     *
+     * @param path The path to the book
+     * @return The input stream of the book data
+     */
     fun getBookData(path: String): InputStream {
         val delegatedBook = delegates
             .firstOrNull { it.supportsPath(path) }
@@ -202,16 +169,12 @@ class BookService(
         }
     }
 
-    fun convertBook(path: String, targetFormat: String): File? {
-        val sourceFormat = path.substringAfterLast('.')
-        val converter = formatConverters.firstOrNull {
-            it.sourceFormat.equals(sourceFormat, ignoreCase = true) &&
-                    it.targetFormat.equals(targetFormat, ignoreCase = true)
-        } ?: return null
-        if (!converter.canConvert(sourceFormat)) return null
-        return getBookData(path).use { converter.convert(it) }
-    }
-
+    /**
+     * Checks if a book exists.
+     *
+     * @param path The path to the book
+     * @return True if the book exists, false otherwise
+     */
     fun bookExists(path: String): Boolean {
         val file = File(path)
         if (!file.exists()) return false
@@ -230,79 +193,16 @@ class BookService(
         }
     }
 
-    suspend fun searchBookByName(searchTerm: String, page: Int): List<Book> =
-        bookRepo.searchBookByName(searchTerm, page)
-
-    suspend fun newBooks(page: Int): PagedBooks = bookRepo.newBooks(page)
-
-    suspend fun findAuthorFirstLetters() = bookMongoRepository.findAuthorFirstLetters()
-
-    suspend fun countExactLastNames(prefix: String) = bookMongoRepository.countExactLastNames(prefix)
-
-    suspend fun findAuthorPrefixes(prefix: String, prefixLength: Int) =
-        bookMongoRepository.findAuthorPrefixes(prefix, prefixLength)
-
-    suspend fun findAuthorsByPrefix(prefix: String) = bookMongoRepository.findAuthorsByPrefix(prefix)
-
-    suspend fun findSeriesByAuthorFullName(fullName: String) =
-        bookMongoRepository.findSeriesByAuthorFullName(fullName)
-
-    suspend fun findBooksBySeries(series: String, sort: Sort) = bookMongoRepository.findBooksBySeries(series, sort)
-
-    suspend fun findBooksByAuthorWithoutSeriesFullName(fullName: String, sort: Sort) =
-        bookMongoRepository.findBooksByAuthorWithoutSeriesFullName(fullName, sort)
-
-    suspend fun findBooksByAuthorFullName(fullName: String, page: Int): PagedBooks {
-        val pageable = PageRequest.of(page, 24, Sort.by(Sort.Direction.ASC, "name"))
-        val books = bookMongoRepository.findBooksByAuthorFullName(fullName, pageable).toList()
-        val total = bookMongoRepository.countByAuthorsFullName(fullName)
-        return PagedBooks(books, total)
-    }
-
-    suspend fun saveBook(book: Book) = bookMongoRepository.save(book)
-
-    fun generateFileName(book: Book, extension: String): String {
-        val baseFileName = buildString {
-            append(book.name.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
-
-            if (book.sequence != null) {
-                append(" [")
-                append(book.sequence.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
-
-                if (book.sequenceNumber != null) {
-                    append(" #")
-                    append(book.sequenceNumber)
-                }
-
-                append("]")
-            }
-        }
-
-        return "$baseFileName.$extension"
-    }
-
-    fun getContentTypeForExtension(extension: String): String {
-        return when (extension.lowercase()) {
-            "epub" -> "application/epub+zip"
-            "fb2" -> "application/x-fictionbook+xml"
-            "pdf" -> "application/pdf"
-            "mobi" -> "application/x-mobipocket-ebook"
-            "txt" -> "text/plain"
-            else -> "application/octet-stream"
-        }
-    }
-
     /**
      * Gets a book cover preview image from SeaweedFS or retrieves it from the book on demand.
      * If the cover is not in SeaweedFS, it retrieves it from the book and caches it to SeaweedFS.
      * If the book doesn't have a cover, it returns NOT_FOUND.
      *
      * @param bookId The ID of the book
-     * @param seaweedFSService The SeaweedFS service to use for retrieving and caching covers
      * @return OperationResultWithData containing the cover data if successful
      */
     suspend fun getBookCover(bookId: String): OperationResultWithData<BookCoverData> {
-        val book = getBookById(bookId) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
+        val book = bookDataService.getBookById(bookId) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
 
         if (!book.hasCover) return OperationResultWithData(OperationResult.NOT_FOUND)
 
@@ -323,7 +223,7 @@ class BookService(
                     // Update the book in the database to reflect that it doesn't have a cover
                     // This is a case where the hasCover flag was true but the book actually doesn't have a cover
                     val updatedBook = book.copy(hasCover = false)
-                    saveBook(updatedBook)
+                    bookDataService.saveBook(updatedBook)
                     return OperationResultWithData(OperationResult.NOT_FOUND)
                 }
 
@@ -352,63 +252,14 @@ class BookService(
         return OperationResultWithData(OperationResult.SUCCESS, bookCoverData)
     }
 
-
-    /**
-     * Prepares a book for download, optionally converting it to a different format.
-     *
-     * @param bookId The ID of the book to download
-     * @param targetFormat Optional format to convert the book to
-     * @return OperationResultWithData containing the download data if successful
-     */
-    suspend fun downloadBook(bookId: String, targetFormat: String? = null): OperationResultWithData<BookDownloadData> {
-        val book = getBookById(bookId) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
-        val originalExtension = book.path.substringAfterLast('.')
-
-        if (targetFormat != null) {
-            val convertedFile = convertBook(book.path, targetFormat)
-                ?: return OperationResultWithData(
-                    OperationResult.BAD_REQUEST,
-                    errorMessage = "Conversion to $targetFormat not supported"
-                )
-
-            val fileName = generateFileName(book, targetFormat)
-            val contentType = getContentTypeForExtension(targetFormat)
-
-            return OperationResultWithData(
-                OperationResult.SUCCESS,
-                BookDownloadData(
-                    resource = FileSystemResource(convertedFile),
-                    fileName = fileName,
-                    contentType = contentType,
-                    tempFile = convertedFile
-                )
-            )
-        }
-
-        val fileName = generateFileName(book, originalExtension)
-        val contentType = getContentTypeForExtension(originalExtension)
-        val bookData = InputStreamResource(getBookData(book.path))
-
-        return OperationResultWithData(
-            OperationResult.SUCCESS,
-            BookDownloadData(
-                resource = bookData,
-                fileName = fileName,
-                contentType = contentType
-            )
-        )
-    }
-
-
     /**
      * Gets a full-size book cover image.
      *
      * @param bookId The ID of the book
-     * @param seaweedFSService The SeaweedFS service to use for retrieving covers
      * @return OperationResultWithData containing the full-size cover data if successful
      */
     suspend fun getFullBookCover(bookId: String): OperationResultWithData<BookCoverData> {
-        val book = getBookById(bookId) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
+        val book = bookDataService.getBookById(bookId) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
         if (!book.hasCover) return OperationResultWithData(OperationResult.NOT_FOUND)
 
         val coverInputStream = seaweedFSService.getBookCover(bookId)
@@ -417,7 +268,7 @@ class BookService(
             val commonBook = obtainBook(book.path) ?: return OperationResultWithData(OperationResult.NOT_FOUND)
             if (commonBook.cover == null || commonBook.coverContentType == null) {
                 val updatedBook = book.copy(hasCover = false)
-                saveBook(updatedBook)
+                bookDataService.saveBook(updatedBook)
                 return OperationResultWithData(OperationResult.NOT_FOUND)
             }
 
@@ -440,4 +291,25 @@ class BookService(
         }
     }
 
+    /**
+     * Converts a size in bytes to a human-readable string.
+     *
+     * @return The human-readable size string
+     */
+    fun Long.humanReadable(): String {
+        val absB = if (this == Long.MIN_VALUE) Long.MAX_VALUE else abs(this)
+        if (absB < 1024) {
+            return "$this B"
+        }
+        var value = absB
+        val ci = StringCharacterIterator("KMGTPE")
+        var i = 40
+        while (i >= 0 && absB > 0xfffccccccccccccL shr i) {
+            value = value shr 10
+            ci.next()
+            i -= 10
+        }
+        value *= sign.toLong()
+        return String.format("%.1f %ciB", value / 1024.0, ci.current())
+    }
 }

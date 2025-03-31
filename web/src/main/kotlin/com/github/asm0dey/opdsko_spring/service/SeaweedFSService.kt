@@ -1,4 +1,4 @@
-package com.github.asm0dey.opdsko_spring
+package com.github.asm0dey.opdsko_spring.service
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service

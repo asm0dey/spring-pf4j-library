@@ -1,4 +1,4 @@
-package com.github.asm0dey.opdsko_spring
+package com.github.asm0dey.opdsko_spring.repo
 
 import com.meilisearch.sdk.Client
 import kotlinx.serialization.Serializable
@@ -12,23 +12,10 @@ data class BookIndexItem(@Id val id: String, val name: String)
 
 @Repository
 class Meilisearch(val client: Client) {
-    fun saveBook(d: BookIndexItem) {
-        client.index("books")
-            .addDocuments(Json.encodeToString(d), "id")
-    }
 
     fun saveBooks(books: List<BookIndexItem>) {
         client.index("books")
             .addDocuments(Json.encodeToString(books), "id")
-    }
-
-    /**
-     * Deletes a book from the Meilisearch index.
-     * 
-     * @param id The ID of the book to delete
-     */
-    fun deleteBook(id: String) {
-        client.index("books").deleteDocument(id)
     }
 
     /**
