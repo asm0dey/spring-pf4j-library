@@ -37,7 +37,7 @@ class Fb2ToEpubConverter : FormatConverter {
 
             // Run the conversion process
             val process = ProcessBuilder(
-                "./fb2c",
+                "/tmp/converter/fb2c",
                 "convert",
                 "--to",
                 "epub",
