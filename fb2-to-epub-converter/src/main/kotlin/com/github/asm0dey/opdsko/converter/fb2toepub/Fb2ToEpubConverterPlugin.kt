@@ -1,5 +1,6 @@
 package com.github.asm0dey.opdsko.converter.fb2toepub
 
+import net.lingala.zip4j.ZipFile
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
 import java.io.File
@@ -37,7 +38,7 @@ class Fb2ToEpubConverterPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     private fun downloadEpubConverter() {
-        thread(isDaemon = true) {
+        thread(isDaemon = true, name = "fb2c-downloader") {
             val osArch = System.getProperty("os.arch").lowercase()
             val arch =
                 if (os != null) {
@@ -78,18 +79,18 @@ class Fb2ToEpubConverterPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
                 |Unpacking…
             """.trimMargin()
                     )
+                    ZipFile(targetFile).use {
+                        val myHeader = it.fileHeaders.first { it.fileName.startsWith("fb2c") }
+                        it.extractFile(
+                            myHeader,
+                            it.file.absoluteFile.parentFile.absolutePath,
+                            myHeader.fileName.substringAfter('/')
+                        )
+                        posixSetAccessible(myHeader.fileName)
+                    }
+                    setConfig()
+                    log.info("Unpacked. Resuming application launch.")
                 }
-                net.lingala.zip4j.ZipFile(targetFile).use {
-                    val myHeader = it.fileHeaders.first { it.fileName.startsWith("fb2c") }
-                    it.extractFile(
-                        myHeader,
-                        it.file.absoluteFile.parentFile.absolutePath,
-                        myHeader.fileName.substringAfter('/')
-                    )
-                    posixSetAccessible(myHeader.fileName)
-                }
-                setConfig()
-                log.info("Unpacked. Resuming application launch.")
                 epubConverterAccessible = true
             }
         }

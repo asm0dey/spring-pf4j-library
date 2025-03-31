@@ -1,6 +1,8 @@
 package com.github.asm0dey.opdsko_spring
 
 import com.github.asm0dey.opdsko.common.FormatConverter
+import com.github.asm0dey.opdsko_spring.handler.HtmxHandler
+import com.github.asm0dey.opdsko_spring.renderer.HtmxViewRenderer
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
@@ -28,7 +30,7 @@ class HtmxHandlerTest {
 
     @BeforeEach
     fun setup() {
-        htmxHandler = HtmxHandler(bookService, formatConverters)
+        htmxHandler = HtmxHandler(bookService, HtmxViewRenderer(), formatConverters)
     }
 
     @Test
@@ -63,16 +65,20 @@ class HtmxHandlerTest {
             .build()
 
         `when`(bookService.searchBookByName(searchTerm, 0)).thenReturn(testBooks)
-        `when`(bookService.imageTypes(testBooks)).thenReturn(mapOf(
-            "1" to "image/jpeg",
-            "2" to "image/jpeg",
-            "3" to "image/jpeg"
-        ))
-        `when`(bookService.shortDescriptions(testBooks)).thenReturn(mapOf(
-            "1" to "Description 1",
-            "2" to "Description 2",
-            "3" to "Description 3"
-        ))
+        `when`(bookService.imageTypes(testBooks)).thenReturn(
+            mapOf(
+                "1" to "image/jpeg",
+                "2" to "image/jpeg",
+                "3" to "image/jpeg"
+            )
+        )
+        `when`(bookService.shortDescriptions(testBooks)).thenReturn(
+            mapOf(
+                "1" to "Description 1",
+                "2" to "Description 2",
+                "3" to "Description 3"
+            )
+        )
 
         // Act
         val response = htmxHandler.search(mockRequest)
@@ -93,16 +99,20 @@ class HtmxHandlerTest {
             .build()
 
         `when`(bookService.newBooks(0)).thenReturn(pagedBooks)
-        `when`(bookService.imageTypes(testBooks)).thenReturn(mapOf(
-            "1" to "image/jpeg",
-            "2" to "image/jpeg",
-            "3" to "image/jpeg"
-        ))
-        `when`(bookService.shortDescriptions(testBooks)).thenReturn(mapOf(
-            "1" to "Description 1",
-            "2" to "Description 2",
-            "3" to "Description 3"
-        ))
+        `when`(bookService.imageTypes(testBooks)).thenReturn(
+            mapOf(
+                "1" to "image/jpeg",
+                "2" to "image/jpeg",
+                "3" to "image/jpeg"
+            )
+        )
+        `when`(bookService.shortDescriptions(testBooks)).thenReturn(
+            mapOf(
+                "1" to "Description 1",
+                "2" to "Description 2",
+                "3" to "Description 3"
+            )
+        )
 
         // Act
         val response = htmxHandler.new(mockRequest)
@@ -180,7 +190,12 @@ class HtmxHandlerTest {
             .build()
 
         `when`(bookService.countExactLastNames(prefix)).thenReturn(flowOf(*exactLastNameCount.toTypedArray()))
-        `when`(bookService.findAuthorPrefixes(prefix, prefix.length + 1)).thenReturn(flowOf(*prefixResults.toTypedArray()))
+        `when`(
+            bookService.findAuthorPrefixes(
+                prefix,
+                prefix.length + 1
+            )
+        ).thenReturn(flowOf(*prefixResults.toTypedArray()))
 
         // Act
         val response = htmxHandler.authorPrefixLevel(mockRequest)
