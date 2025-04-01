@@ -41,11 +41,128 @@ The project is organized as a multi-module Gradle project:
 
 ### Prerequisites
 
-- Java 21 or later
 - Docker and Docker Compose
-- Gradle (optional, wrapper included)
+- Git (optional, for cloning the repository)
 
-### Steps
+### Recommended Installation Method
+
+The recommended way to install and run OPDSKO Spring is using Docker Compose with the pre-built Docker image.
+
+1. Create a `.env` file in the project root with the following variables:
+   ```
+   POSTGRES_USER=postgres
+   POSTGRES_PASS=your_secure_password
+   MEILI_MASTER_KEY=your_secure_master_key
+   ```
+
+2. Create a `compose.yml` file with the following content:
+   ```yaml
+   services:
+     postgres:
+       image: ghcr.io/ferretdb/postgres-documentdb:17
+       restart: on-failure
+       #    ports:
+       #      - 5433:5432
+       environment:
+         - POSTGRES_USER=${POSTGRES_USER}
+         - POSTGRES_PASSWORD=${POSTGRES_PASS}
+         - POSTGRES_DB=postgres
+         - PGDATA=/var/lib/postgresql/data/pgdata
+       volumes:
+         - ./data/postgres:/var/lib/postgresql/data/pgdata
+
+     ferretdb:
+       image: ghcr.io/ferretdb/ferretdb:2
+       restart: on-failure
+       depends_on:
+         - postgres
+       environment:
+         - FERRETDB_POSTGRESQL_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASS}@postgres:5432/postgres
+         - MONGODB_ROOT_USERNAME=${POSTGRES_USER}
+         - MONGODB_ROOT_PASSWORD=${POSTGRES_PASS}
+       labels:
+         org.springframework.boot.service-connection: mongo
+
+     meilisearch:
+       image: getmeili/meilisearch:latest
+       environment:
+         - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+       volumes:
+         - "./data/meilisearch:/meili_data"
+
+     seaweedfs:
+       image: chrislusf/seaweedfs
+       restart: on-failure
+       command: "server -master -filer -ip.bind=0.0.0.0"
+       volumes:
+         - ./data/seaweedfs:/data
+       healthcheck:
+         test: netstat -an | grep 9333 > /dev/null; if [ 0 != $? ]; then exit 1; fi;
+         interval: 5s
+         timeout: 60s
+         retries: 10
+         start_period: 5s
+
+     app:
+       image: ghcr.io/asm0dey/opdsko:latest
+       restart: unless-stopped
+       ports:
+         - 8081:8080
+       volumes:
+         - ./plugins:/workspace/plugins # Plugins path
+         - ./book:/books:ro # Mount with books
+       depends_on:
+         - ferretdb
+         - meilisearch
+         - seaweedfs
+       environment:
+         - SCANNER_SOURCES=/books 
+         - SPRING_DATA_MONGODB_USERNAME=${POSTGRES_USER}
+         - SPRING_DATA_MONGODB_PASSWORD=${POSTGRES_PASS}
+         - AUTH_ALLOWED_IPS=127.0.0.1,192.168.0.0/24
+         - AUTH_ENABLED=false
+         - AUTH_ALLOWED_EMAILS=your.email@example.com
+         - AUTH_APPLICATION_URL=https://your-domain.com
+         - SEAWEEDFS_HOST=seaweedfs
+         - MEILISEARCH_HOST=meilisearch
+         - MEILISEARCH_PORT=7700
+         - MEILISEARCH_API_KEY=${MEILI_MASTER_KEY}
+         - SPRING_DATA_MONGODB_HOST=ferretdb
+   ```
+
+3. Adjust the volumes in the `app` service to point to your e-book collection:
+   ```yaml
+   volumes:
+     - ./plugins:/workspace/plugins
+     - /path/to/your/books:/books:ro
+   ```
+
+4. Update the environment variables in the `app` service as needed:
+   ```yaml
+   environment:
+     - SCANNER_SOURCES=/books/
+     - AUTH_ALLOWED_EMAILS=your.email@example.com
+     - AUTH_APPLICATION_URL=https://your-domain.com
+   ```
+
+5. Start the Docker Compose services:
+   ```bash
+   docker compose up -d
+   ```
+
+8. Access the application at http://localhost:8081
+
+### Service Explanations
+
+- **postgres**: PostgreSQL database used by FerretDB as a backend storage
+- **ferretdb**: MongoDB-compatible database that uses PostgreSQL as its storage engine
+- **meilisearch**: Fast search engine for indexing and searching your e-book collection
+- **seaweedfs**: Distributed file system for storing e-book files and metadata
+- **app**: The main OPDSKO Spring application that serves the OPDS catalog
+
+### Alternative: Building from Source
+
+If you prefer to build the application from source:
 
 1. Clone the repository:
    ```bash
@@ -53,29 +170,22 @@ The project is organized as a multi-module Gradle project:
    cd spring-pf4j-library
    ```
 
-2. Create a `.env` file in the project root with the following variables:
-   ```
-   POSTGRES_USER=postgres
-   POSTGRES_PASS=your_secure_password
-   MEILI_MASTER_KEY=your_secure_master_key
-   ```
-
-3. Build the application and plugins:
+2. Build the application and plugins:
    ```bash
    ./gradlew build
    ```
 
-4. Start the Docker Compose services:
+3. Start the Docker Compose services (without the app service):
    ```bash
-   docker-compose up -d
+   docker compose up -d postgres ferretdb meilisearch seaweedfs
    ```
 
-5. Run the application:
+4. Run the application:
    ```bash
    ./gradlew :web:bootRun
    ```
 
-6. Access the application at http://localhost:8080
+5. Access the application at http://localhost:8080
 
 ## Configuration
 
@@ -136,7 +246,7 @@ Or use environment variables:
 1. Configure your book sources in the `application.yml` file.
 2. Start the application.
 3. The application will scan your sources and index your books.
-4. Access the OPDS catalog at http://localhost:8080/common
+4. Access the OPDS catalog at http://localhost:8081/opds
 5. Connect your e-book reader application to the OPDS catalog.
 
 ## Building a Docker Image
@@ -147,7 +257,7 @@ You can build a Docker image of the application:
 ./gradlew :web:bootBuildImage
 ```
 
-This will create a Docker image named `asm0dey/web:0.0.1-SNAPSHOT`.
+This will create a Docker image named `asm0dey/p[ds:0.0.1`.
 
 ## GitHub Actions
 
@@ -161,31 +271,6 @@ To trigger a release:
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
-```
-
-### Plugin Workflows
-
-Each plugin has its own workflow that builds and releases the plugin when a tag with the plugin's name is pushed:
-
-- FB2 Support: `fb2-support.yml`
-- EPUB Support: `epub-support.yml`
-- FB2 to EPUB Converter: `fb2-to-epub-converter.yml`
-- INPX Support: `inpx-support.yml`
-
-To trigger a plugin release:
-```bash
-git tag fb2-support-v1.0.0
-git push origin fb2-support-v1.0.0
-```
-
-### Web Module Workflow
-
-The web module (main application) has its own workflow (`web.yml`) that builds and releases the application when a tag with the web module's name is pushed. It also builds and pushes a Docker image.
-
-To trigger a web module release:
-```bash
-git tag web-v1.0.0
-git push origin web-v1.0.0
 ```
 
 ## Development
