@@ -33,7 +33,8 @@ class HtmxHandlerTest {
 
     @BeforeEach
     fun setup() {
-        htmxHandler = HtmxHandler(bookService, HtmxViewRenderer(), formatConverters)
+        val libraryProperties = LibraryProperties("Test Library")
+        htmxHandler = HtmxHandler(bookService, HtmxViewRenderer(libraryProperties), formatConverters)
     }
 
     @Test

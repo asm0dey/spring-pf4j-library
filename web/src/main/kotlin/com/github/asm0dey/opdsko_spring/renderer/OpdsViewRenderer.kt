@@ -1,13 +1,14 @@
 package com.github.asm0dey.opdsko_spring.renderer
 
 import com.github.asm0dey.opdsko_spring.Book
+import com.github.asm0dey.opdsko_spring.LibraryProperties
 import org.springframework.stereotype.Component
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 @Component
-class OpdsViewRenderer : ViewRenderer {
+class OpdsViewRenderer(private val libraryProperties: LibraryProperties) : ViewRenderer {
     private val ISO_DATE_FORMAT = DateTimeFormatter.ISO_INSTANT
 
     override fun NavTile(title: String, subtitle: String, href: String): String {
@@ -124,7 +125,7 @@ class OpdsViewRenderer : ViewRenderer {
             )
         ) {
             element("id", content = "urn:uuid:opdsko-catalog")
-            element("title", content = "Asm0dey's Library")
+            element("title", content = libraryProperties.title)
             element("updated", content = ZonedDateTime.now(ZoneId.of("UTC")).format(ISO_DATE_FORMAT))
             element("author") {
                 element("name", content = "Asm0dey")

@@ -1,6 +1,7 @@
 package com.github.asm0dey.opdsko_spring.renderer
 
 import com.github.asm0dey.opdsko_spring.Book
+import com.github.asm0dey.opdsko_spring.LibraryProperties
 import kotlinx.html.*
 import kotlinx.html.ButtonType.submit
 import kotlinx.html.FormMethod.post
@@ -12,7 +13,7 @@ import kotlin.math.abs
 import kotlin.math.min
 
 @Component
-class SimpleViewRenderer : ViewRenderer {
+class SimpleViewRenderer(private val libraryProperties: LibraryProperties) : ViewRenderer {
     override fun NavTile(title: String, subtitle: String, href: String): String {
         return createHTML(false).div(classes = "column col-4") {
             div("card") {
@@ -100,7 +101,7 @@ class SimpleViewRenderer : ViewRenderer {
             head {
                 meta(charset = "utf-8")
                 meta(name = "viewport", content = "width=device-width, initial-scale=1")
-                title("Asm0dey's library")
+                title(libraryProperties.title)
                 link(rel = "stylesheet", href = "/webjars/spectre.css/0.5.9/dist/spectre.min.css")
                 link(rel = "stylesheet", href = "/webjars/spectre.css/0.5.9/dist/spectre-icons.min.css")
                 style {
@@ -145,7 +146,7 @@ class SimpleViewRenderer : ViewRenderer {
                                 height = "28"
                             }
                             +Entities.nbsp
-                            +"Asm0dey's library"
+                            +libraryProperties.title
                         }
                     }
                     section(classes = "navbar-section") {

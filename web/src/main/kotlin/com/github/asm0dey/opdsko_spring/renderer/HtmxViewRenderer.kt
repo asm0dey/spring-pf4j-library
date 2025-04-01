@@ -1,6 +1,7 @@
 package com.github.asm0dey.opdsko_spring.renderer
 
 import com.github.asm0dey.opdsko_spring.Book
+import com.github.asm0dey.opdsko_spring.LibraryProperties
 import kotlinx.html.*
 import kotlinx.html.ButtonType.submit
 import kotlinx.html.FormMethod.post
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component
 import kotlin.math.min
 
 @Component
-class HtmxViewRenderer : ViewRenderer {
+class HtmxViewRenderer(private val libraryProperties: LibraryProperties) : ViewRenderer {
     override fun NavTile(title: String, subtitle: String, href: String): String {
         return createHTML(false).div("cell is-clickable") {
             layoutUpdateAttributes(href)
@@ -119,7 +120,7 @@ class HtmxViewRenderer : ViewRenderer {
             head {
                 meta(charset = "utf-8")
                 meta(name = "viewport", content = "width=device-width, initial-scale=1")
-                title("Asm0dey's library")
+                title(libraryProperties.title)
                 link(rel = "stylesheet", href = "/webjars/bulma/1.0.3/css/bulma.min.css")
                 link(rel = "stylesheet", href = "/webjars/font-awesome/4.7.0/css/font-awesome.min.css")
             }
@@ -134,7 +135,7 @@ class HtmxViewRenderer : ViewRenderer {
                                 attributes["hx-indicator"] = "#loader"
                                 img(alt = "Logo", src = "/logo.png")
                                 +Entities.nbsp
-                                +"Asm0dey's library"
+                                +libraryProperties.title
                             }
                         }
                         div("navbar-end") {
