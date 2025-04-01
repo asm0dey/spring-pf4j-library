@@ -96,7 +96,14 @@ seaweedfs:
 # - AUTH_APPLICATION_URL: The URL of the application, used for OAuth2 redirect
 #   Example: AUTH_APPLICATION_URL=http://localhost:8080
 auth:
-  enabled: ${AUTH_ENABLED:true}
+  enabled: ${AUTH_ENABLED:false}
   allowed-ips:
   allowed-emails:
   application-url: ${AUTH_APPLICATION_URL:http://localhost:8080}
+
+# Library configuration
+# Environment variables:
+# - LIBRARY_TITLE: The title of the library application displayed in the UI
+#   Example: LIBRARY_TITLE=My Personal Library
+library:
+  title: ${LIBRARY_TITLE:Asm0dey's library}
