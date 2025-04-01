@@ -2,6 +2,8 @@ package com.github.asm0dey.opdsko_spring.renderer
 
 import com.github.asm0dey.opdsko_spring.Book
 import kotlinx.html.*
+import kotlinx.html.ButtonType.submit
+import kotlinx.html.FormMethod.post
 import kotlinx.html.stream.createHTML
 import org.springframework.stereotype.Component
 import kotlin.math.min
@@ -105,13 +107,14 @@ class HtmxViewRenderer : ViewRenderer {
         content: String,
         breadcrumbs: String,
         pagination: String,
-        fullRender: Boolean
+        fullRender: Boolean,
+        isAdmin: Boolean
     ) =
         if (!fullRender) content + breadcrumbs + (pagination.takeIf { it.isNotBlank() } ?: emptyNav)
-        else fullPage(content, breadcrumbs, pagination)
+        else fullPage(content, breadcrumbs, pagination, isAdmin)
 
 
-    fun fullPage(content: String, breadcrumbs: String, pagination: String): String {
+    fun fullPage(content: String, breadcrumbs: String, pagination: String, isAdmin: Boolean = false): String {
         return createHTML(false).html {
             head {
                 meta(charset = "utf-8")
@@ -132,6 +135,28 @@ class HtmxViewRenderer : ViewRenderer {
                                 img(alt = "Logo", src = "/logo.png")
                                 +Entities.nbsp
                                 +"Asm0dey's library"
+                            }
+                        }
+                        div("navbar-end") {
+                            div("navbar-item") {
+                                div("buttons") {
+                                    if (isAdmin) {
+                                        form(action = "/scan", method = post, classes = "is-inline-block ml-2") {
+                                            button(type = submit, classes = "button is-primary") { +"Scan" }
+                                        }
+                                        form(action = "/resync", method = post, classes = "is-inline-block ml-2") {
+                                            button(type = submit, classes = "button is-info") { +"Resync" }
+                                        }
+                                        form(action = "/cleanup", method = post, classes = "is-inline-block ml-2") {
+                                            button(type = submit, classes = "button is-warning") { +"Cleanup" }
+                                        }
+                                    }
+                                    form(action = "/logout", method = post) {
+                                        button(type = submit, classes = "button is-danger") {
+                                            +"Logout"
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

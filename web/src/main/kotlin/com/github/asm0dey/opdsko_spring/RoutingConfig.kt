@@ -1,6 +1,7 @@
 package com.github.asm0dey.opdsko_spring
 
 import com.github.asm0dey.opdsko_spring.handler.HtmxHandler
+import com.github.asm0dey.opdsko_spring.handler.LoginHandler
 import com.github.asm0dey.opdsko_spring.handler.OpdsHandler
 import com.github.asm0dey.opdsko_spring.handler.SimpleHandler
 import org.springframework.context.annotation.Bean
@@ -15,9 +16,17 @@ import java.net.URI
 class RoutingConfig {
 
     @Bean
-    fun router(htmxHandler: HtmxHandler, opdsHandler: OpdsHandler, commonHandler: CommonHandler, scanner: Scanner, simpleHandler: SimpleHandler) = coRouter {
+    fun router(
+        htmxHandler: HtmxHandler,
+        opdsHandler: OpdsHandler,
+        commonHandler: CommonHandler,
+        scanner: Scanner,
+        simpleHandler: SimpleHandler,
+        loginHandler: LoginHandler
+    ) = coRouter {
         GET("/") { ServerResponse.permanentRedirect(URI("/api")).buildAndAwait() }
         resources("/**", ClassPathResource("static/"))
+        GET("/login", loginHandler::loginPage)
         GET("/api").nest {
             GET("", htmxHandler::homePage)
             GET("/search", htmxHandler::search)

@@ -34,20 +34,23 @@ class HtmxHandler(
         return viewRenderer.Breadcrumbs(model.items)
     }
 
-    override fun fullPage(content: String, breadcrumbs: String, req: ServerRequest): String {
+    override fun fullPage(content: String, breadcrumbs: String, req: ServerRequest, isAdmin: Boolean): String {
         return viewRenderer.fullPage(
             content,
             breadcrumbs,
-            fullRender = !req.headers().firstHeader("HX-Request").toBoolean()
+            pagination = "",
+            fullRender = !req.headers().firstHeader("HX-Request").toBoolean(),
+            isAdmin = isAdmin
         )
     }
 
-    override fun fullPage(content: String, breadcrumbs: String, pagination: String, req: ServerRequest): String {
+    override fun fullPage(content: String, breadcrumbs: String, pagination: String, req: ServerRequest, isAdmin: Boolean): String {
         return viewRenderer.fullPage(
             content,
             breadcrumbs,
             pagination,
-            !req.headers().firstHeader("HX-Request").toBoolean()
+            !req.headers().firstHeader("HX-Request").toBoolean(),
+            isAdmin
         )
     }
 

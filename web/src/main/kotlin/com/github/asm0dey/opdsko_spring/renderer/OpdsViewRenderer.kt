@@ -113,7 +113,7 @@ class OpdsViewRenderer : ViewRenderer {
     }
 
 
-    override fun fullPage(content: String, breadcrumbs: String, pagination: String, fullRender: Boolean): String {
+    override fun fullPage(content: String, breadcrumbs: String, pagination: String, fullRender: Boolean, isAdmin: Boolean): String {
         val xmlBuilder = XmlBuilder()
         xmlBuilder.xmlDeclaration()
 

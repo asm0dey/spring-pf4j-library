@@ -26,16 +26,8 @@ spring:
             scope:
               - email
               - profile
-#mongock:
-#  migration-scan-package: com.github.asm0dey.opdsko_spring.migrations
-#  runner-type: ApplicationRunner
-#  track-ignored: false
-#  test-enabled: false
-
-#  datasource:
-#    url: jdbc:postgresql://localhost:5432/opdsko
-#    username: postgres
-#    password: password
+  main:
+    banner-mode: off
 
 logging:
   level:
@@ -104,7 +96,7 @@ seaweedfs:
 # - AUTH_APPLICATION_URL: The URL of the application, used for OAuth2 redirect
 #   Example: AUTH_APPLICATION_URL=http://localhost:8080
 auth:
-  enabled: ${AUTH_ENABLED:false}
-  allowed-ips: ${AUTH_ALLOWED_IPS:127.0.0.1,::1,192.168.0.0/24,10.0.0.0/8,2001:db8::/32}
-  allowed-emails: ${AUTH_ALLOWED_EMAILS:pavel.finkelshtein@gmail.com}
+  enabled: ${AUTH_ENABLED:true}
+  allowed-ips:
+  allowed-emails:
   application-url: ${AUTH_APPLICATION_URL:http://localhost:8080}
