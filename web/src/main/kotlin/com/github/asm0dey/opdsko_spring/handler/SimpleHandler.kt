@@ -34,12 +34,12 @@ class SimpleHandler(
         return viewRenderer.Breadcrumbs(model.items)
     }
 
-    override fun fullPage(content: String, breadcrumbs: String, req: ServerRequest): String {
-        return viewRenderer.fullPage(content, breadcrumbs)
+    override fun fullPage(content: String, breadcrumbs: String, req: ServerRequest, isAdmin: Boolean): String {
+        return viewRenderer.fullPage(content, breadcrumbs, pagination = "", fullRender = true, isAdmin = isAdmin)
     }
 
-    override fun fullPage(content: String, breadcrumbs: String, pagination: String, req: ServerRequest): String {
-        return viewRenderer.fullPage(content, breadcrumbs, pagination)
+    override fun fullPage(content: String, breadcrumbs: String, pagination: String, req: ServerRequest, isAdmin: Boolean): String {
+        return viewRenderer.fullPage(content, breadcrumbs, pagination, fullRender = true, isAdmin = isAdmin)
     }
 
     override fun Pagination(currentPage: Int, totalPages: Int, baseUrl: String): String {

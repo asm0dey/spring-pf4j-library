@@ -4,12 +4,20 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
+import org.springframework.security.config.web.server.invoke
 import org.springframework.security.core.Authentication
+import org.springframework.security.crypto.argon2.Argon2PasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.security.web.server.WebFilterExchange
 import org.springframework.security.web.server.authentication.ServerAuthenticationFailureHandler
+import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler
+import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler
+import org.springframework.security.web.server.util.matcher.PathPatternParserServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import java.net.InetAddress
@@ -18,45 +26,251 @@ import java.net.UnknownHostException
 
 /**
  * Security configuration for the application.
- * Configures Google OAuth2 authentication and IP-based authentication bypass.
+ * Configures Google OAuth2 authentication, form-based authentication, basic authentication, and IP-based authentication bypass.
  */
 @Configuration
 @EnableWebFluxSecurity
-class SecurityConfig(private val authProperties: AuthProperties) {
+class SecurityConfig(
+    private val authProperties: AuthProperties,
+    private val mongoUserDetailsService: MongoReactiveUserDetailsService
+) {
 
     /**
-     * Configures the security filter chain.
-     * If authentication is enabled, it configures Google OAuth2 authentication and IP-based authentication bypass.
-     * If authentication is disabled, it permits all requests.
+     * Provides the password encoder for the application.
+     * Uses Argon2 for secure password hashing.
      */
     @Bean
-    fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
+    fun passwordEncoder(): PasswordEncoder = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8()
+
+    /**
+     * Configures the security filter chain for the root endpoint.
+     * This endpoint redirects to /api and should use form-based authentication.
+     */
+    @Bean
+    @org.springframework.core.annotation.Order(1)
+    fun rootSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
         if (!authProperties.enabled) {
-            return http
-                .csrf { it.disable() }
-                .authorizeExchange { it.anyExchange().permitAll() }
-                .build()
+            return http {
+                securityMatcher(PathPatternParserServerWebExchangeMatcher("/"))
+                csrf { disable() }
+                authorizeExchange {
+                    authorize(anyExchange, permitAll)
+                }
+            }
         }
 
-        return http
-            .csrf { it.disable() }
-            .authorizeExchange {
-                it.matchers(IpAddressMatcher(authProperties.allowedIps)).permitAll()
-                it.anyExchange().authenticated()
+        return http {
+            securityMatcher(PathPatternParserServerWebExchangeMatcher("/"))
+            csrf { disable() }
+            authorizeExchange { authorize(anyExchange, permitAll) }
+        }
+    }
+
+    /**
+     * Configures the security filter chain for the admin endpoints (/scan, /cleanup, /resync).
+     * These endpoints are protected and require the ADMIN role.
+     */
+    @Bean
+    @org.springframework.core.annotation.Order(5)
+    fun adminEndpointsSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
+        return http {
+            securityMatcher(pathMatchers("/scan", "/cleanup", "/resync"))
+            csrf { disable() }
+            if (!authProperties.enabled) {
+                authorizeExchange {
+                    authorize(anyExchange, permitAll)
+                }
+            } else {
+                authorizeExchange {
+                    authorize(anyExchange, hasRole("ADMIN"))
+                }
+                formLogin {
+                    loginPage = "/login"
+                }
+                oauth2Login {
+                    authenticationFailureHandler = authenticationFailureHandler()
+                }
             }
-            .oauth2Login {
-                it.authenticationFailureHandler(authenticationFailureHandler())
-                // Set the base URL for OAuth2 redirects and check if email is allowed
-                it.authenticationSuccessHandler { exchange, authentication ->
+        }
+
+    }
+
+    /**
+     * Configures the security filter chain for static resources and IP-based authentication bypass.
+     * This filter chain allows access to static resources and requests from allowed IPs.
+     */
+    @Bean
+    @org.springframework.core.annotation.Order(6)
+    fun staticResourcesSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
+        if (!authProperties.enabled) {
+            return http {
+                securityMatcher(PathPatternParserServerWebExchangeMatcher("/**"))
+                csrf { disable() }
+                authorizeExchange {
+                    authorize(anyExchange, permitAll)
+                }
+            }
+        }
+        return http {
+            securityMatcher(PathPatternParserServerWebExchangeMatcher("/**"))
+            csrf { disable() }
+            authorizeExchange {
+                authorize(
+                    pathMatchers(
+                        "/favicon.ico",
+                        "/static/**",
+                        "/*.js",
+                        "/*.css",
+                        "/*.png",
+                        "/*.svg",
+                        "/",
+                        "/oauth2/**",
+                        "/logout",
+                        "/webjars/**",
+                    ), permitAll
+                )
+                authorize("/login", permitAll)
+                authorize(IpAddressMatcher(authProperties.allowedIps), permitAll)
+                authorize(anyExchange, authenticated)
+            }
+            formLogin {
+                loginPage = "/login"
+            }
+            oauth2Login {
+                authenticationFailureHandler = authenticationFailureHandler()
+            }
+        }
+    }
+
+    /**
+     * Configures the security filter chain for the /opds endpoint.
+     * This endpoint is protected by basic authentication.
+     */
+    @Bean
+    @org.springframework.core.annotation.Order(2)
+    fun opdsSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
+        if (!authProperties.enabled) {
+            return http {
+                securityMatcher(PathPatternParserServerWebExchangeMatcher("/opds/**"))
+                csrf { disable() }
+                authorizeExchange {
+                    authorize(anyExchange, permitAll)
+                }
+            }
+        }
+        return http {
+            securityMatcher(PathPatternParserServerWebExchangeMatcher("/opds/**"))
+            csrf { disable() }
+            authorizeExchange {
+                authorize(anyExchange, authenticated)
+//                authorize(anyExchange, permitAll)
+            }
+            httpBasic {}
+        }
+    }
+
+    /**
+     * Configures the security filter chain for the /simple endpoint.
+     * This endpoint is protected by form and Google OAuth2 authentication.
+     */
+    @Bean
+    @org.springframework.core.annotation.Order(3)
+    fun simpleSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
+        if (!authProperties.enabled) {
+            return http {
+                securityMatcher(PathPatternParserServerWebExchangeMatcher("/simple/**"))
+                csrf { disable() }
+                authorizeExchange {
+                    authorize(anyExchange, permitAll)
+                }
+            }
+        }
+
+        // Configure logout success handler to redirect to home page
+        return http {
+            securityMatcher(PathPatternParserServerWebExchangeMatcher("/simple/**"))
+            csrf { disable() }
+            authorizeExchange { authorize(anyExchange, authenticated) }
+            formLogin {
+                loginPage = "/login"
+                authenticationSuccessHandler = ServerAuthenticationSuccessHandler { exchange, _ ->
+                    val redirectUri = getRedirectUri(exchange, "/simple")
+                    exchange.exchange.response.headers.location = URI(redirectUri)
+                    Mono.empty()
+                }
+            }
+            logout {
+                logoutUrl = "/logout"
+                val serverLogoutSuccessHandler = RedirectServerLogoutSuccessHandler()
+                logoutSuccessHandler = serverLogoutSuccessHandler
+            }
+            oauth2Login {
+                authenticationFailureHandler = authenticationFailureHandler()
+                authenticationSuccessHandler = ServerAuthenticationSuccessHandler { exchange, authentication ->
                     // Get the email from the authentication object
                     val email = getEmailFromAuthentication(authentication)
 
                     // Check if the email is in the allowed list
                     if (authProperties.allowedEmails.contains(email)) {
-                        // Email is allowed, redirect to the application
-                        val redirectUri = "${authProperties.applicationUrl}/"
-                        exchange.exchange.response.headers.location = URI(redirectUri)
-                        Mono.empty()
+                        // Email is allowed, check if a user with this email already exists
+                        mongoUserDetailsService.emailExists(email)
+                            .flatMap { exists ->
+                                if (exists) {
+                                    // User exists, check if it's a Gmail user
+                                    mongoUserDetailsService.findByEmail(email)
+                                        .flatMap { user ->
+                                            // If a user is not already an admin, check if there are any admin users with Gmail accounts
+                                            if (!user.hasRole("ADMIN")) {
+                                                // Check if there are any admin users with Gmail accounts
+                                                mongoUserDetailsService.findAdminUserWithEmail(email)
+                                                    .collectList()
+                                                    .flatMap { adminUsers ->
+                                                        if (adminUsers.isNotEmpty()) {
+                                                            // There are admin users with Gmail accounts, grant admin privileges
+                                                            user.addRole("ADMIN")
+                                                            mongoUserDetailsService.updateUser(user)
+                                                        } else {
+                                                            Mono.just(user)
+                                                        }
+                                                    }
+                                            } else {
+                                                Mono.just(user)
+                                            }
+                                        }
+                                } else {
+                                    // User doesn't exist, create a new one
+                                    // For OAuth users, we don't have a password, so generate a random one
+                                    val randomPassword =
+                                        passwordEncoder().encode(java.util.UUID.randomUUID().toString())
+                                    val newUser = MongoUserDetails(
+                                        email = email,
+                                        password = randomPassword,
+                                        roles = setOf("USER")
+                                    )
+                                    mongoUserDetailsService.createUser(newUser)
+                                }
+                            }
+                            .flatMap {
+                                // Redirect to the application
+                                exchange.exchange.response.headers.location = URI(
+                                    getRedirectUri(
+                                        exchange,
+                                        "/simple"
+                                    )
+                                )
+                                Mono.empty<Void>()
+                            }
+                            .onErrorResume {
+
+                                // In case of error, still redirect to the application
+                                exchange.exchange.response.headers.location = URI(
+                                    getRedirectUri(
+                                        exchange,
+                                        "/simple"
+                                    )
+                                )
+                                Mono.empty()
+                            }
                     } else {
                         // Email is not allowed, throw custom exception
                         // This will be caught by the authentication failure handler
@@ -64,7 +278,122 @@ class SecurityConfig(private val authProperties: AuthProperties) {
                     }
                 }
             }
-            .build()
+        }
+    }
+
+    private fun getRedirectUri(exchange: WebFilterExchange, base: String) =
+        exchange.exchange.request.headers.getFirst("Referer") ?: "${authProperties.applicationUrl}$base"
+
+    /**
+     * Configures the security filter chain for the /api endpoint.
+     * This endpoint is protected by form authentication.
+     */
+    @Bean
+    @org.springframework.core.annotation.Order(4)
+    fun apiSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
+        if (!authProperties.enabled) {
+            return http {
+                securityMatcher(PathPatternParserServerWebExchangeMatcher("/api/**"))
+                csrf { disable() }
+                authorizeExchange {
+                    authorize(anyExchange, permitAll)
+                }
+            }
+        }
+
+        // Configure logout success handler to redirect to home page
+        return http {
+            securityMatcher(PathPatternParserServerWebExchangeMatcher("/api/**"))
+            csrf { disable() }
+            authorizeExchange { authorize(anyExchange, authenticated) }
+            formLogin {
+                loginPage = "/login"
+                authenticationSuccessHandler = ServerAuthenticationSuccessHandler { exchange, _ ->
+                    val redirectUri = getRedirectUri(exchange, "/api")
+                    exchange.exchange.response.headers.location = URI(redirectUri)
+                    Mono.empty()
+                }
+            }
+            logout {
+                logoutUrl = "/logout"
+                logoutSuccessHandler = RedirectServerLogoutSuccessHandler()
+            }
+            oauth2Login {
+                authenticationFailureHandler = authenticationFailureHandler()
+                authenticationSuccessHandler = ServerAuthenticationSuccessHandler { exchange, authentication ->
+                    // Get the email from the authentication object
+                    val email = getEmailFromAuthentication(authentication)
+
+                    // Check if the email is in the allowed list
+                    if (authProperties.allowedEmails.contains(email)) {
+                        // Email is allowed, check if a user with this email already exists
+                        mongoUserDetailsService.emailExists(email)
+                            .flatMap { exists ->
+                                if (exists) {
+                                    // User exists, check if it's a Gmail user
+                                    mongoUserDetailsService.findByEmail(email)
+                                        .flatMap { user ->
+                                            // If a user is not already an admin, check if there are any admin users with Gmail accounts
+                                            if (!user.hasRole("ADMIN")) {
+                                                // Check if there are any admin users with Gmail accounts
+                                                mongoUserDetailsService.findAdminUserWithEmail(email)
+                                                    .collectList()
+                                                    .flatMap { adminUsers ->
+                                                        if (adminUsers.isNotEmpty()) {
+                                                            // There are admin users with Gmail accounts, grant admin privileges
+                                                            user.addRole("ADMIN")
+                                                            mongoUserDetailsService.updateUser(user)
+                                                        } else {
+                                                            Mono.just(user)
+                                                        }
+                                                    }
+                                            } else {
+                                                Mono.just(user)
+                                            }
+                                        }
+                                } else {
+                                    // User doesn't exist, create a new one
+                                    // For OAuth users, we don't have a password, so generate a random one
+                                    val randomPassword =
+                                        passwordEncoder().encode(java.util.UUID.randomUUID().toString())
+                                    val newUser = MongoUserDetails(
+                                        email = email,
+                                        password = randomPassword,
+                                        roles = setOf("USER")
+                                    )
+                                    mongoUserDetailsService.createUser(newUser)
+                                }
+                            }
+                            .flatMap {
+                                // Redirect to the application
+                                exchange.exchange.response.headers.location = URI(
+                                    getRedirectUri(
+                                        exchange,
+                                        "/api"
+                                    )
+                                )
+                                Mono.empty<Void>()
+                            }
+                            .onErrorResume {
+
+                                // In case of error, still redirect to the application
+                                exchange.exchange.response.headers.location = URI(
+                                    getRedirectUri(
+                                        exchange,
+                                        "/api"
+                                    )
+                                )
+                                Mono.empty()
+                            }
+                    } else {
+                        // Email is not allowed, throw custom exception
+                        // This will be caught by the authentication failure handler
+                        throw UnauthorizedEmailException(email)
+                    }
+                }
+            }
+
+        }
     }
 
     /**

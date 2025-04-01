@@ -9,14 +9,19 @@ import com.github.asm0dey.opdsko_spring.service.BookService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.http.MediaType
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.bodyValueAndAwait
 import org.springframework.web.reactive.function.server.queryParamOrNull
+import reactor.core.publisher.Mono
 import java.net.URLDecoder
 import java.net.URLEncoder.encode
 import kotlin.jvm.optionals.getOrNull
@@ -32,13 +37,28 @@ abstract class AbstractHandler(
     protected abstract fun NavTile(model: NavTileViewModel): String
     protected abstract fun BookTile(model: BookTileViewModel, additionalFormats: List<String>): String
     protected abstract fun Breadcrumbs(model: BreadcrumbsViewModel): String
-    protected abstract fun fullPage(content: String, breadcrumbs: String, req: ServerRequest): String
+    protected abstract fun fullPage(content: String, breadcrumbs: String, req: ServerRequest, isAdmin: Boolean = false): String
     protected abstract fun fullPage(
         content: String,
         breadcrumbs: String,
         pagination: String,
-        req: ServerRequest
+        req: ServerRequest,
+        isAdmin: Boolean = false
     ): String
+
+    /**
+     * Checks if the current user has the ROLE_ADMIN authority.
+     *
+     * @param req The server request
+     * @return A boolean indicating whether the current user is an admin
+     */
+    protected suspend fun isAdmin(req: ServerRequest): Boolean {
+        val principal = req.principal().awaitSingle() ?: return false
+        if (principal is Authentication) {
+            return principal.authorities.any { it.authority == "ROLE_ADMIN" }
+        }
+        return false
+    }
 
     protected abstract fun Pagination(currentPage: Int, totalPages: Int, baseUrl: String): String
     protected abstract fun IndeterminatePagination(currentPage: Int, hasMoreItems: Boolean, baseUrl: String): String
@@ -62,7 +82,8 @@ abstract class AbstractHandler(
             )
         )
 
-        return ok().bodyValueAndAwait(fullPage(content, breadcrumbs, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(content, breadcrumbs, req, isAdmin))
     }
 
     suspend fun search(req: ServerRequest): ServerResponse {
@@ -94,7 +115,8 @@ abstract class AbstractHandler(
         val hasMoreItems = books.size == 15
         val pagination = IndeterminatePagination(pageParam, hasMoreItems, "${baseUrl}/search?search=$searchTerm")
 
-        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, pagination, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, pagination, req, isAdmin))
     }
 
     suspend fun new(req: ServerRequest): ServerResponse {
@@ -126,7 +148,8 @@ abstract class AbstractHandler(
         val hasMoreItems = books.size >= 24
         val pagination = IndeterminatePagination(pageParam, hasMoreItems, "${baseUrl}/new")
 
-        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, pagination, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, pagination, req, isAdmin))
     }
 
     /**
@@ -154,7 +177,8 @@ abstract class AbstractHandler(
             )
         )
 
-        return ok().bodyValueAndAwait(fullPage(navTiles, breadcrumbs, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(navTiles, breadcrumbs, req, isAdmin))
     }
 
     /**
@@ -190,7 +214,8 @@ abstract class AbstractHandler(
         }
 
         val breadcrumbs = Breadcrumbs(buildAuthorBreadcrumbs(prefix))
-        return ok().bodyValueAndAwait(fullPage(navTiles, breadcrumbs, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(navTiles, breadcrumbs, req, isAdmin))
     }
 
     /**
@@ -213,7 +238,8 @@ abstract class AbstractHandler(
         }
 
         val breadcrumbs = Breadcrumbs(buildAuthorBreadcrumbs(prefix))
-        return ok().bodyValueAndAwait(fullPage(navTiles, breadcrumbs, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(navTiles, breadcrumbs, req, isAdmin))
     }
 
     /**
@@ -259,7 +285,8 @@ abstract class AbstractHandler(
             )
         )
 
-        return ok().bodyValueAndAwait(fullPage(navTiles, breadcrumbs, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(navTiles, breadcrumbs, req, isAdmin))
     }
 
     /**
@@ -295,7 +322,8 @@ abstract class AbstractHandler(
             )
         )
 
-        return ok().bodyValueAndAwait(fullPage(navTiles, breadcrumbs, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(navTiles, breadcrumbs, req, isAdmin))
     }
 
     /**
@@ -324,7 +352,8 @@ abstract class AbstractHandler(
             )
         )
 
-        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, req, isAdmin))
     }
 
     /**
@@ -360,7 +389,8 @@ abstract class AbstractHandler(
             )
         )
 
-        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, req, isAdmin))
     }
 
     /**
@@ -400,7 +430,8 @@ abstract class AbstractHandler(
 
         val pagination = Pagination(pageParam, pagedBooks.total.toInt(), "${baseUrl}/author/view/$encodedFullName/all")
 
-        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, pagination, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, pagination, req, isAdmin))
     }
 
     fun additionalFormats(path: String) = formatConverters
@@ -430,7 +461,8 @@ abstract class AbstractHandler(
             )
         )
 
-        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, req))
+        val isAdmin = isAdmin(req)
+        return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, req, isAdmin))
     }
 
     private suspend fun AbstractHandler.generateBookTilesForSeries(seriesName: String): String {

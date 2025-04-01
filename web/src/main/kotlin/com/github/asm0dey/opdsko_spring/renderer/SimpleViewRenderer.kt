@@ -2,6 +2,8 @@ package com.github.asm0dey.opdsko_spring.renderer
 
 import com.github.asm0dey.opdsko_spring.Book
 import kotlinx.html.*
+import kotlinx.html.ButtonType.submit
+import kotlinx.html.FormMethod.post
 import kotlinx.html.stream.createHTML
 import org.springframework.stereotype.Component
 import java.net.URI
@@ -12,10 +14,18 @@ import kotlin.math.min
 @Component
 class SimpleViewRenderer : ViewRenderer {
     override fun NavTile(title: String, subtitle: String, href: String): String {
-        return createHTML(false).a(href = href, classes = "card") {
-            style = "align-self: auto;"
-            h3(classes = "card-title") { +title }
-            p(classes = "card-text") { +subtitle }
+        return createHTML(false).div(classes = "column col-4") {
+            div("card") {
+                div(classes = "card-header") {
+                    div(classes = "card-title h5") { +title }
+                }
+                div(classes = "card-body") {
+                    p { +subtitle }
+                }
+                div(classes = "card-footer") {
+                    a(href = href, classes = "btn btn-primary") { +"View" }
+                }
+            }
         }
     }
 
@@ -25,37 +35,42 @@ class SimpleViewRenderer : ViewRenderer {
         descriptions: Map<String, String?>,
         additionalFormats: List<String>
     ): String {
-        return createHTML(false).div(classes = "card") {
-            style = "align-self: auto;"
-            div("section") {
-                h3() { +book.name }
-            }
-            if (images[book.id] != null && book.hasCover) {
-                a(href = "/simple/book/${book.id}/fullimage") {
-                    img(src = "/common/image/${book.id}", classes = "section media") {
-                        attributes["loading"] = "lazy"
-                        attributes["alt"] = "Book cover for ${book.name}"
-                        attributes["title"] = "Click to view full-size image"
+        return createHTML(false).div(classes = "column col-4") {
+            div("card") {
+                div(classes = "card-image") {
+                    if (images[book.id] != null && book.hasCover) {
+                        a(href = "/simple/book/${book.id}/fullimage") {
+                            img(src = "/common/image/${book.id}", classes = "img-responsive") {
+                                attributes["loading"] = "lazy"
+                                attributes["alt"] = "Book cover for ${book.name}"
+                                attributes["title"] = "Click to view full-size image"
+                            }
+                        }
                     }
                 }
-            }
-            p() {
-                text((descriptions[book.id]?.let {
-                    it.substring(0 until min(it.length, 200))
-                }?.plus('…') ?: ""))
-            }
-            div(classes = "btn-group section") {
-                a(href = "/simple/book/${book.id}/info", classes = "button") { +"Info" }
-
-                // Original format download
-                val extension = book.path.substringAfterLast('.')
-                a(href = "/common/book/${book.id}/download", classes = "button") {
-                    +extension
+                div(classes = "card-header") {
+                    div(classes = "card-title h5") { +book.name }
                 }
+                div(classes = "card-body") {
+                    p {
+                        text(
+                            (descriptions[book.id]?.let { it.substring(0 until min(it.length, 200)) }?.plus('…') ?: "")
+                        )
+                    }
+                }
+                div(classes = "card-footer") {
+                    a(href = "/simple/book/${book.id}/info", classes = "btn btn-primary") { +"Info" }
 
-                additionalFormats.forEach { it ->
-                    a(href = "/common/book/${book.id}/download/$it", classes = "button") {
-                        +it
+                    // Original format download
+                    val extension = book.path.substringAfterLast('.')
+                    a(href = "/common/book/${book.id}/download", classes = "btn btn-link") {
+                        +extension
+                    }
+
+                    additionalFormats.forEach {
+                        a(href = "/common/book/${book.id}/download/$it", classes = "btn btn-link") {
+                            +it
+                        }
                     }
                 }
             }
@@ -63,77 +78,48 @@ class SimpleViewRenderer : ViewRenderer {
     }
 
     override fun Breadcrumbs(items: List<Pair<String, String>>): String {
-        return createHTML(false).div {
-            ul(classes = "breadcrumb") {
-                items.forEachIndexed { index, pair ->
-                    val (name, href) = pair
-                    li(classes = if (index == items.size - 1) "breadcrumb-item active" else "breadcrumb-item") {
-                        a(href = href) { +name }
-                    }
+        return createHTML(false).ul(classes = "breadcrumb") {
+            items.forEachIndexed { index, pair ->
+                val (name, href) = pair
+                li(classes = (if (index == items.size - 1) "active " else "") + "breadcrumb-item") {
+                    a(href = href) { +name }
                 }
             }
         }
     }
 
 
-    override fun fullPage(content: String, breadcrumbs: String, pagination: String, fullRender: Boolean): String {
+    override fun fullPage(
+        content: String,
+        breadcrumbs: String,
+        pagination: String,
+        fullRender: Boolean,
+        isAdmin: Boolean
+    ): String {
         return createHTML(false).html {
             head {
                 meta(charset = "utf-8")
                 meta(name = "viewport", content = "width=device-width, initial-scale=1")
                 title("Asm0dey's library")
-                link(rel = "stylesheet", href = "https://cdn.jsdelivr.net/npm/mini.css@3.0.1/dist/mini-default.min.css")
+                link(rel = "stylesheet", href = "/webjars/spectre.css/0.5.9/dist/spectre.min.css")
+                link(rel = "stylesheet", href = "/webjars/spectre.css/0.5.9/dist/spectre-icons.min.css")
                 style {
                     unsafe {
                         +"""
-                             /* Custom styles for pagination */
-    .pagination {
-      display: flex;
-      justify-content: center;
-      list-style: none;
-      padding: 0;
-      margin: 20px 0;
-    }
-
-    .pagination li {
-      margin: 0 5px;
-    }
-
-    .pagination a {
-      display: block;
-      padding: 8px 12px;
-      text-decoration: none;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      color: #333;
-    }
-
-    .pagination a:hover {
-      background-color: #f0f0f0;
-    }
-
-    .pagination a.active {
-      background-color: #007bff;
-      color: white;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 600px) {
-      .pagination li {
-        display: none;
-      }
-
-      .pagination li:first-child,
-      .pagination li:nth-child(2),
-      .pagination li:last-child,
-      .pagination li:nth-last-child(2) {
-        display: inline-block;
-      }
-    }
+                            .books .col-4 {
+                                padding: .5em;
+                            }
+                            .books .card {
+                                border: 0;
+                                box-shadow: 0 .25rem 1rem rgba(48,55,66,.15);
+                                height: 100%;
+                            }
+                            .books .card img {
+                                width: 100%;
+                            }
                         """.trimIndent()
                     }
                 }
-
                 link(href = "/apple-touch-icon.png", rel = "apple-touch-icon") {
                     sizes = "180x180"
                 }
@@ -150,50 +136,78 @@ class SimpleViewRenderer : ViewRenderer {
                 meta(name = "msapplication-TileColor", content = "#2b5797")
                 meta(name = "theme-color", content = "#ffffff")
             }
-            body {
-                header(classes = "sticky") {
-                    a(href = "/simple", classes = "logo") {
-                        img(alt = "Logo", src = "/logo.png") {
-                            width = "28"
-                            height = "28"
+            body("books") {
+                header(classes = "navbar") {
+                    section(classes = "navbar-section") {
+                        a(href = "/simple", classes = "navbar-brand mr-2") {
+                            img(alt = "Logo", src = "/logo.png") {
+                                width = "28"
+                                height = "28"
+                            }
+                            +Entities.nbsp
+                            +"Asm0dey's library"
                         }
-                        +Entities.nbsp
-                        +"Asm0dey's library"
+                    }
+                    section(classes = "navbar-section") {
+                        if (isAdmin) {
+                            form(action = "/cleanup", method = post, classes = "d-inline") {
+                                a(href = "javascript:;", classes = "btn btn-link") {
+                                    onClick = "parentNode.submit();"
+                                    +"Scan"
+                                }
+                            }
+                            form(action = "/cleanup", method = post, classes = "d-inline") {
+                                a(href = "javascript:;", classes = "btn btn-link") {
+                                    onClick = "parentNode.submit();"
+                                    +"Resync"
+                                }
+
+                            }
+                            form(action = "/cleanup", method = post, classes = "d-inline") {
+                                a(href = "javascript:;", classes = "btn btn-link") {
+                                    onClick = "parentNode.submit();"
+                                    +"Cleanup"
+                                }
+
+                            }
+                        }
+                        form(action = "/logout", method = post, classes = "d-inline") {
+                            a(href = "javascript:;", classes = "btn btn-link") {
+                                onClick = "parentNode.submit();"
+                                +"Logout"
+                            }
+                        }
                     }
                 }
-                div(classes = "container") {
-                    div(classes = "row") {
-                        div(classes = "col-sm-12") {
+                div(classes = "container grid-lg") {
+                    div(classes = "columns") {
+                        div(classes = "column col-12") {
                             form(action = "/simple/search", method = FormMethod.get) {
-                                div(classes = "row") {
-                                    div(classes = "col-sm") {
-                                        input(InputType.text, name = "search") {
-                                            placeholder = "Search"
-                                        }
+                                div(classes = "input-group") {
+                                    input(InputType.text, name = "search", classes = "form-input") {
+                                        placeholder = "Search"
                                     }
-                                    div(classes = "col-sm-2") {
-                                        button(type = ButtonType.submit, classes = "primary") {
-                                            +"Search"
-                                        }
+                                    button(type = submit, classes = "btn btn-primary input-group-btn") {
+                                        +"Search"
                                     }
                                 }
                             }
                         }
                     }
-                    div(classes = "row") {
-                        div(classes = "col-sm-12") {
+                    div(classes = "columns") {
+                        div(classes = "column col-12") {
                             unsafe {
                                 +breadcrumbs
                             }
                         }
                     }
-                    div(classes = "row") {
+                    div(classes = "columns") {
                         unsafe {
                             +content
                         }
                     }
-                    div(classes = "row") {
-                        div(classes = "col-sm-12") {
+                    div(classes = "columns") {
+                        div(classes = "column col-12") {
                             unsafe {
                                 +pagination
                             }
@@ -205,58 +219,50 @@ class SimpleViewRenderer : ViewRenderer {
     }
 
     override fun Pagination(currentPage: Int, totalPages: Int, baseUrl: String): String {
-        val curPage = currentPage
-        val total = totalPages
-        val base = baseUrl
         fun String.withParam(param: String) = if (URI(this).query == null) "${this}?$param" else "${this}&$param"
-        val last = total / 15 + 1
+        val last = totalPages / 15 + 1
 
-        if (curPage == 1 && total / 15 + 1 == 1) return ""
+        if (currentPage == 1 && totalPages / 15 + 1 == 1) return ""
 
         return createHTML(false).div {
-            nav {
-                ul(classes = "pagination") {
-                    li(classes = if (curPage == 1) "page-item disabled" else "page-item") {
-                        a(
-                            href = if (curPage == 1) "#" else base.withParam("page=${curPage - 1}"),
-                            classes = "page-link"
-                        ) {
-                            +"Previous"
-                        }
+            ul(classes = "pagination") {
+                li(classes = if (currentPage == 1) "page-item disabled" else "page-item") {
+                    a(
+                        href = if (currentPage == 1) "#" else baseUrl.withParam("page=${currentPage - 1}")
+                    ) {
+                        +"Previous"
                     }
+                }
 
-                    val pageToDraw = (1..last).map {
-                        it to (it == 1 || it == last || abs(curPage - it) <= 1)
-                    }
-                    val realToDraw = pageToDraw.fold(listOf<Pair<Int, Boolean>>()) { a, b ->
-                        if (b.second) a + b
-                        else if (a.isNotEmpty() && a.last().second) a + (-1 to false)
-                        else a
-                    }
-                    for ((page, draw) in realToDraw) {
-                        if (!draw) {
-                            li(classes = "page-item") {
-                                span(classes = "page-link") { +"…" }
-                            }
-                        } else {
-                            li(classes = if (curPage == page) "page-item active" else "page-item") {
-                                a(
-                                    href = if (curPage == page) "#" else base.withParam("page=$page"),
-                                    classes = "page-link"
-                                ) {
-                                    +(page.toString())
-                                }
+                val pageToDraw = (1..last).map {
+                    it to (it == 1 || it == last || abs(currentPage - it) <= 1)
+                }
+                val realToDraw = pageToDraw.fold(listOf<Pair<Int, Boolean>>()) { a, b ->
+                    if (b.second) a + b
+                    else if (a.isNotEmpty() && a.last().second) a + (-1 to false)
+                    else a
+                }
+                for ((page, draw) in realToDraw) {
+                    if (!draw) {
+                        li(classes = "page-item") {
+                            span { +"…" }
+                        }
+                    } else {
+                        li(classes = if (currentPage == page) "page-item active" else "page-item") {
+                            a(
+                                href = if (currentPage == page) "#" else baseUrl.withParam("page=$page")
+                            ) {
+                                +(page.toString())
                             }
                         }
                     }
+                }
 
-                    li(classes = if (curPage == last) "page-item disabled" else "page-item") {
-                        a(
-                            href = if (curPage == last) "#" else base.withParam("page=${curPage + 1}"),
-                            classes = "page-link"
-                        ) {
-                            +"Next"
-                        }
+                li(classes = if (currentPage == last) "page-item disabled" else "page-item") {
+                    a(
+                        href = if (currentPage == last) "#" else baseUrl.withParam("page=${currentPage + 1}")
+                    ) {
+                        +"Next"
                     }
                 }
             }
@@ -271,28 +277,24 @@ class SimpleViewRenderer : ViewRenderer {
         if (curPage == 1 && !hasMoreItems) return ""
 
         return createHTML(false).div {
-            nav {
-                ul(classes = "pagination") {
-                    li(classes = if (curPage == 1) "page-item disabled" else "page-item") {
-                        a(
-                            href = if (curPage == 1) "#" else base.withParam("page=${curPage - 1}"),
-                            classes = "page-link"
-                        ) {
-                            +"Previous"
-                        }
+            ul(classes = "pagination") {
+                li(classes = if (curPage == 1) "page-item disabled" else "page-item") {
+                    a(
+                        href = if (curPage == 1) "#" else base.withParam("page=${curPage - 1}")
+                    ) {
+                        +"Previous"
                     }
-                    li(classes = "page-item active") {
-                        a(href = "#", classes = "page-link") {
-                            +(curPage.toString())
-                        }
+                }
+                li(classes = "page-item active") {
+                    a(href = "#") {
+                        +(curPage.toString())
                     }
-                    li(classes = if (!hasMoreItems) "page-item disabled" else "page-item") {
-                        a(
-                            href = if (!hasMoreItems) "#" else base.withParam("page=${curPage + 1}"),
-                            classes = "page-link"
-                        ) {
-                            +"Next"
-                        }
+                }
+                li(classes = if (!hasMoreItems) "page-item disabled" else "page-item") {
+                    a(
+                        href = if (!hasMoreItems) "#" else base.withParam("page=${curPage + 1}")
+                    ) {
+                        +"Next"
                     }
                 }
             }
@@ -301,18 +303,22 @@ class SimpleViewRenderer : ViewRenderer {
 
     fun bookInfo(book: Book, description: String?, additionalFormats: List<String>, baseUrl: String): String {
         return createHTML(false).div {
-            h1 { +book.name }
+            h1(classes = "text-center") { +book.name }
 
             if (book.hasCover) {
-                figure {
+                figure(classes = "figure") {
                     a(href = "$baseUrl/book/${book.id}/fullimage") {
-                        img(src = "/common/image/${book.id}", alt = "Book cover for ${book.name}")
+                        img(
+                            src = "/common/image/${book.id}",
+                            alt = "Book cover for ${book.name}",
+                            classes = "img-responsive"
+                        )
                     }
                 }
             }
 
             h2 { +"Book Information" }
-            table {
+            table(classes = "table table-striped table-hover") {
                 // Author information
                 tr {
                     th { +"Author" }
@@ -351,21 +357,21 @@ class SimpleViewRenderer : ViewRenderer {
             // Description
             h2 { +"Description" }
             if (description != null) {
-                div { unsafe { +description } }
+                div(classes = "content") { unsafe { +description } }
             } else {
                 p { +"No description available." }
             }
 
             // Download links
             h2 { +"Download" }
-            div {
+            div(classes = "btn-group btn-group-block") {
                 // Original format download
-                a(href = "/common/book/${book.id}/download", classes = "button") {
+                a(href = "/common/book/${book.id}/download", classes = "btn btn-primary") {
                     +"Download ${book.path.substringAfterLast('.').uppercase()}"
                 }
 
                 additionalFormats.forEach {
-                    a(href = "/common/book/${book.id}/download/$it", classes = "button") {
+                    a(href = "/common/book/${book.id}/download/$it", classes = "btn") {
                         +"Download ${it.uppercase()}"
                     }
                 }
@@ -375,12 +381,16 @@ class SimpleViewRenderer : ViewRenderer {
 
     fun fullBookCover(book: Book, baseUrl: String): String {
         return createHTML(false).div {
-            h1 { +book.name }
-            figure {
-                img(src = "/common/fullimage/${book.id}", alt = "Full-size book cover for ${book.name}")
+            h1(classes = "text-center") { +book.name }
+            figure(classes = "figure") {
+                img(
+                    src = "/common/fullimage/${book.id}",
+                    alt = "Full-size book cover for ${book.name}",
+                    classes = "img-responsive"
+                )
             }
-            p {
-                a(href = "$baseUrl/book/${book.id}/info", classes = "button") { +"Back to Book Info" }
+            p(classes = "text-center") {
+                a(href = "$baseUrl/book/${book.id}/info", classes = "btn btn-primary") { +"Back to Book Info" }
             }
         }
     }

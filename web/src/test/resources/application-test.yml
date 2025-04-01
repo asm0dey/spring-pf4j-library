@@ -1,0 +1,24 @@
+spring:
+  docker:
+    compose:
+      enabled: false
+  data:
+    mongodb:
+      authentication-database: admin
+      auto-index-creation: true
+      port: 27017
+      password: password
+      username: postgres
+
+auth:
+  enabled: true
+  allowed-ips: 
+  allowed-emails: test@example.com
+  application-url: http://localhost:8080
+  default-email: admin@example.com
+  password: password
+
+logging:
+  level:
+    root: warn
+    com.github.asm0dey.opdsko_spring: debug

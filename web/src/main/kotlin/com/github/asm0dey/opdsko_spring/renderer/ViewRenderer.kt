@@ -12,7 +12,7 @@ interface ViewRenderer {
         additionalFormats: List<String>
     ): String
     fun Breadcrumbs(items: List<Pair<String, String>>): String
-    fun fullPage(content: String, breadcrumbs: String, pagination: String = "", fullRender: Boolean = true): String
+    fun fullPage(content: String, breadcrumbs: String, pagination: String = "", fullRender: Boolean = true, isAdmin: Boolean = false): String
     fun Pagination(currentPage: Int, totalPages: Int, baseUrl: String): String
     fun IndeterminatePagination(currentPage: Int, hasMoreItems: Boolean, baseUrl: String): String
 }

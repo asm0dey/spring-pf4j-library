@@ -4,7 +4,9 @@ import com.mongodb.reactivestreams.client.MongoClient
 import io.mongock.driver.mongodb.reactive.driver.MongoReactiveDriver
 import io.mongock.runner.springboot.MongockSpringboot
 import io.mongock.runner.springboot.base.MongockApplicationRunner
+import org.springframework.boot.WebApplicationType
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.boot.runApplication
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
@@ -23,7 +25,17 @@ import kotlin.LazyThreadSafetyMode.PUBLICATION
 class OpdskoSpringApplication
 
 fun main(args: Array<String>) {
-    runApplication<OpdskoSpringApplication>(*args)
+    val cliCommands = listOf("--add-user", "--update-password", "--set-role")
+    val isCliCommand = args.any { arg -> cliCommands.any { cmd -> arg.startsWith(cmd) } }
+
+    if (isCliCommand) {
+        // Run the application without starting the web server
+        SpringApplicationBuilder(OpdskoSpringApplication::class.java)
+            .web(WebApplicationType.NONE)
+            .run(*args)
+    } else {
+        runApplication<OpdskoSpringApplication>(*args)
+    }
 }
 
 @Configuration

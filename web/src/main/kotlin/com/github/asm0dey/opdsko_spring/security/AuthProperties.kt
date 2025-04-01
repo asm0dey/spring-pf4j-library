@@ -15,5 +15,5 @@ data class AuthProperties(
     val enabled: Boolean = false,
     val allowedIps: List<String> = emptyList(),
     val allowedEmails: List<String> = emptyList(),
-    val applicationUrl: String = "http://localhost:8080"
+    val applicationUrl: String = "http://localhost:8080",
 )

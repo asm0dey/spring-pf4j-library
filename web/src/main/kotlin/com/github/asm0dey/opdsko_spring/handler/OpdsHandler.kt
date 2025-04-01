@@ -1,11 +1,11 @@
 package com.github.asm0dey.opdsko_spring.handler
 
 import com.github.asm0dey.opdsko.common.FormatConverter
-import com.github.asm0dey.opdsko_spring.service.BookService
 import com.github.asm0dey.opdsko_spring.model.BookTileViewModel
 import com.github.asm0dey.opdsko_spring.model.BreadcrumbsViewModel
 import com.github.asm0dey.opdsko_spring.model.NavTileViewModel
 import com.github.asm0dey.opdsko_spring.renderer.OpdsViewRenderer
+import com.github.asm0dey.opdsko_spring.service.BookService
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -34,13 +34,20 @@ class OpdsHandler(
         return viewRenderer.Breadcrumbs(model.items)
     }
 
-    override fun fullPage(content: String, breadcrumbs: String, req: ServerRequest): String {
-        return viewRenderer.fullPage(content, breadcrumbs)
+    override fun fullPage(content: String, breadcrumbs: String, req: ServerRequest, isAdmin: Boolean): String {
+        return viewRenderer.fullPage(content, breadcrumbs, pagination = "", fullRender = true, isAdmin = isAdmin)
     }
 
-    override fun fullPage(content: String, breadcrumbs: String, pagination: String, req: ServerRequest): String {
-        return viewRenderer.fullPage(content, breadcrumbs, pagination)
+    override fun fullPage(
+        content: String,
+        breadcrumbs: String,
+        pagination: String,
+        req: ServerRequest,
+        isAdmin: Boolean
+    ): String {
+        return viewRenderer.fullPage(content, breadcrumbs, pagination, fullRender = true, isAdmin = isAdmin)
     }
+
 
     override fun Pagination(currentPage: Int, totalPages: Int, baseUrl: String): String {
         return viewRenderer.Pagination(currentPage, totalPages, baseUrl)

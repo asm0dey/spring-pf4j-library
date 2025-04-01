@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.data.domain.Sort
 import org.springframework.http.HttpMethod
 import org.springframework.mock.web.reactive.function.server.MockServerRequest
+import org.springframework.security.authentication.TestingAuthenticationToken
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
 import java.io.File
@@ -40,6 +41,7 @@ class HtmxHandlerTest {
         // Arrange
         val mockRequest = MockServerRequest.builder()
             .method(HttpMethod.GET)
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .header("HX-Request", "false")
             .build()
 
@@ -61,6 +63,7 @@ class HtmxHandlerTest {
         queryParams.add("search", searchTerm)
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .queryParams(queryParams)
@@ -96,8 +99,10 @@ class HtmxHandlerTest {
         val pagedBooks = PagedBooks(testBooks, 3)
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .build()
 
         `when`(bookService.newBooks(0)).thenReturn(pagedBooks)
@@ -133,6 +138,7 @@ class HtmxHandlerTest {
         )
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .build()
@@ -153,6 +159,7 @@ class HtmxHandlerTest {
         val testBooks = createTestBooks(3)
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .pathVariable("series", seriesName)
@@ -186,6 +193,7 @@ class HtmxHandlerTest {
         val exactLastNameCount = listOf(CountResult(0))
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .pathVariable("prefix", prefix)
@@ -215,6 +223,7 @@ class HtmxHandlerTest {
         )
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .pathVariable("prefix", prefix)
@@ -239,6 +248,7 @@ class HtmxHandlerTest {
         )
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .pathVariable("prefix", prefix)
@@ -264,6 +274,7 @@ class HtmxHandlerTest {
         )
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .pathVariable("prefix", prefix)
@@ -286,6 +297,7 @@ class HtmxHandlerTest {
         val series = listOf(SeriesResult("Test Series"))
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .pathVariable("fullName", encodedFullName)
@@ -308,6 +320,7 @@ class HtmxHandlerTest {
         val pagedBooks = PagedBooks(createTestBooks(3), 3)
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .pathVariable("fullName", encodedFullName)
@@ -333,6 +346,7 @@ class HtmxHandlerTest {
         val series = listOf(SeriesResult("Test Series"), SeriesResult("Another Series"))
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .pathVariable("fullName", encodedFullName)
@@ -357,13 +371,20 @@ class HtmxHandlerTest {
         val testBooks = createTestBooks(3)
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .pathVariable("fullName", encodedFullName)
             .pathVariable("series", encodedSeriesName)
             .build()
 
-        `when`(bookService.findBooksBySeriesAndAuthorFullName(seriesName, fullName, Sort.by(Sort.Direction.ASC, "sequenceNumber")))
+        `when`(
+            bookService.findBooksBySeriesAndAuthorFullName(
+                seriesName,
+                fullName,
+                Sort.by(Sort.Direction.ASC, "sequenceNumber")
+            )
+        )
             .thenReturn(flowOf(*testBooks.toTypedArray()))
         `when`(bookService.imageTypes(testBooks)).thenReturn(testBooks.associate { it.id!! to "image/jpeg" })
         `when`(bookService.shortDescriptions(testBooks)).thenReturn(testBooks.associate { it.id!! to "Description for ${it.name}" })
@@ -383,6 +404,7 @@ class HtmxHandlerTest {
         val testBooks = createTestBooks(3)
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .pathVariable("fullName", encodedFullName)
@@ -409,6 +431,7 @@ class HtmxHandlerTest {
         val pagedBooks = PagedBooks(testBooks, 3)
 
         val mockRequest = MockServerRequest.builder()
+            .principal(TestingAuthenticationToken("user", "user", "USER"))
             .method(HttpMethod.GET)
             .header("HX-Request", "false")
             .pathVariable("fullName", encodedFullName)
