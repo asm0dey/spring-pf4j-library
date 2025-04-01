@@ -11,8 +11,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.whenever
 import org.springframework.data.domain.Sort
 import org.springframework.http.HttpMethod
 import org.springframework.mock.web.reactive.function.server.MockServerRequest
@@ -69,22 +70,21 @@ class HtmxHandlerTest {
             .header("HX-Request", "false")
             .queryParams(queryParams)
             .build()
-
-        `when`(bookService.searchBookByName(searchTerm, 0)).thenReturn(testBooks)
-        `when`(bookService.imageTypes(testBooks)).thenReturn(
+        doReturn(testBooks).whenever(bookService).searchBookByName(searchTerm, 0)
+        doReturn(
             mapOf(
                 "1" to "image/jpeg",
                 "2" to "image/jpeg",
                 "3" to "image/jpeg"
             )
-        )
-        `when`(bookService.shortDescriptions(testBooks)).thenReturn(
+        ).whenever(bookService).imageTypes(testBooks)
+        doReturn(
             mapOf(
                 "1" to "Description 1",
                 "2" to "Description 2",
                 "3" to "Description 3"
             )
-        )
+        ).whenever(bookService).shortDescriptions(testBooks)
 
         // Act
         val response = htmxHandler.search(mockRequest)
@@ -106,21 +106,21 @@ class HtmxHandlerTest {
             .principal(TestingAuthenticationToken("user", "user", "USER"))
             .build()
 
-        `when`(bookService.newBooks(0)).thenReturn(pagedBooks)
-        `when`(bookService.imageTypes(testBooks)).thenReturn(
+        doReturn(pagedBooks).whenever(bookService).newBooks(0)
+        doReturn(
             mapOf(
                 "1" to "image/jpeg",
                 "2" to "image/jpeg",
                 "3" to "image/jpeg"
             )
-        )
-        `when`(bookService.shortDescriptions(testBooks)).thenReturn(
+        ).whenever(bookService).imageTypes(testBooks)
+        doReturn(
             mapOf(
                 "1" to "Description 1",
                 "2" to "Description 2",
                 "3" to "Description 3"
             )
-        )
+        ).whenever(bookService).shortDescriptions(testBooks)
 
         // Act
         val response = htmxHandler.new(mockRequest)
@@ -144,7 +144,7 @@ class HtmxHandlerTest {
             .header("HX-Request", "false")
             .build()
 
-        `when`(bookService.findAuthorFirstLetters()).thenReturn(flowOf(*authorLetters.toTypedArray()))
+        doReturn(flowOf(*authorLetters.toTypedArray())).whenever(bookService).findAuthorFirstLetters()
 
         // Act
         val response = htmxHandler.authorFirstLevel(mockRequest)
@@ -166,15 +166,14 @@ class HtmxHandlerTest {
             .pathVariable("series", seriesName)
             .build()
 
-        `when`(bookService.findBooksBySeries(seriesName, Sort.by(Sort.Direction.ASC, "sequenceNumber")))
-            .thenReturn(flowOf(*testBooks.toTypedArray()))
+        doReturn(flowOf(*testBooks.toTypedArray())).whenever(bookService).findBooksBySeries(seriesName, Sort.by(Sort.Direction.ASC, "sequenceNumber"))
 
         // Ensure all books have IDs and the maps contain entries for all IDs
         val imageTypes = testBooks.associate { it.id!! to "image/jpeg" }
         val shortDescriptions = testBooks.associate { it.id!! to "Description for ${it.name}" }
 
-        `when`(bookService.imageTypes(testBooks)).thenReturn(imageTypes)
-        `when`(bookService.shortDescriptions(testBooks)).thenReturn(shortDescriptions)
+        doReturn(imageTypes).whenever(bookService).imageTypes(testBooks)
+        doReturn(shortDescriptions).whenever(bookService).shortDescriptions(testBooks)
 
         // Act
         val response = htmxHandler.seriesBooks(mockRequest)
@@ -200,13 +199,11 @@ class HtmxHandlerTest {
             .pathVariable("prefix", prefix)
             .build()
 
-        `when`(bookService.countExactLastNames(prefix)).thenReturn(flowOf(*exactLastNameCount.toTypedArray()))
-        `when`(
-            bookService.findAuthorPrefixes(
-                prefix,
-                prefix.length + 1
-            )
-        ).thenReturn(flowOf(*prefixResults.toTypedArray()))
+        doReturn(flowOf(*exactLastNameCount.toTypedArray())).whenever(bookService).countExactLastNames(prefix)
+        doReturn(flowOf(*prefixResults.toTypedArray())).whenever(bookService).findAuthorPrefixes(
+            prefix,
+            prefix.length + 1
+        )
 
         // Act
         val response = htmxHandler.authorPrefixLevel(mockRequest)
@@ -230,7 +227,7 @@ class HtmxHandlerTest {
             .pathVariable("prefix", prefix)
             .build()
 
-        `when`(bookService.findAuthorsByPrefix(prefix)).thenReturn(flowOf(*authors.toTypedArray()))
+        doReturn(flowOf(*authors.toTypedArray())).whenever(bookService).findAuthorsByPrefix(prefix)
 
         // Act
         val response = htmxHandler.authorPrefixLevel(mockRequest)
@@ -255,8 +252,8 @@ class HtmxHandlerTest {
             .pathVariable("prefix", prefix)
             .build()
 
-        `when`(bookService.countExactLastNames(prefix)).thenReturn(flowOf(*exactLastNameCount.toTypedArray()))
-        `when`(bookService.findAuthorsByPrefix(prefix)).thenReturn(flowOf(*authors.toTypedArray()))
+        doReturn(flowOf(*exactLastNameCount.toTypedArray())).whenever(bookService).countExactLastNames(prefix)
+        doReturn(flowOf(*authors.toTypedArray())).whenever(bookService).findAuthorsByPrefix(prefix)
 
         // Act
         val response = htmxHandler.authorPrefixLevel(mockRequest)
@@ -281,7 +278,7 @@ class HtmxHandlerTest {
             .pathVariable("prefix", prefix)
             .build()
 
-        `when`(bookService.findAuthorsByPrefix(prefix)).thenReturn(flowOf(*authors.toTypedArray()))
+        doReturn(flowOf(*authors.toTypedArray())).whenever(bookService).findAuthorsByPrefix(prefix)
 
         // Act
         val response = htmxHandler.authorFullNames(mockRequest)
@@ -304,7 +301,7 @@ class HtmxHandlerTest {
             .pathVariable("fullName", encodedFullName)
             .build()
 
-        `when`(bookService.findSeriesByAuthorFullName(fullName)).thenReturn(flowOf(*series.toTypedArray()))
+        doReturn(flowOf(*series.toTypedArray())).whenever(bookService).findSeriesByAuthorFullName(fullName)
 
         // Act
         val response = htmxHandler.authorView(mockRequest)
@@ -327,10 +324,10 @@ class HtmxHandlerTest {
             .pathVariable("fullName", encodedFullName)
             .build()
 
-        `when`(bookService.findSeriesByAuthorFullName(fullName)).thenReturn(flowOf())
-        `when`(bookService.findBooksByAuthorFullName(fullName, 0)).thenReturn(pagedBooks)
-        `when`(bookService.imageTypes(pagedBooks.books)).thenReturn(pagedBooks.books.associate { it.id!! to "image/jpeg" })
-        `when`(bookService.shortDescriptions(pagedBooks.books)).thenReturn(pagedBooks.books.associate { it.id!! to "Description for ${it.name}" })
+        doReturn(flowOf<SeriesResult>()).whenever(bookService).findSeriesByAuthorFullName(fullName)
+        doReturn(pagedBooks).whenever(bookService).findBooksByAuthorFullName(fullName, 0)
+        doReturn(pagedBooks.books.associate { it.id!! to "image/jpeg" }).whenever(bookService).imageTypes(pagedBooks.books)
+        doReturn(pagedBooks.books.associate { it.id!! to "Description for ${it.name}" }).whenever(bookService).shortDescriptions(pagedBooks.books)
 
         // Act
         val response = htmxHandler.authorView(mockRequest)
@@ -353,7 +350,7 @@ class HtmxHandlerTest {
             .pathVariable("fullName", encodedFullName)
             .build()
 
-        `when`(bookService.findSeriesByAuthorFullName(fullName)).thenReturn(flowOf(*series.toTypedArray()))
+        doReturn(flowOf(*series.toTypedArray())).whenever(bookService).findSeriesByAuthorFullName(fullName)
 
         // Act
         val response = htmxHandler.authorSeries(mockRequest)
@@ -379,16 +376,13 @@ class HtmxHandlerTest {
             .pathVariable("series", encodedSeriesName)
             .build()
 
-        `when`(
-            bookService.findBooksBySeriesAndAuthorFullName(
-                seriesName,
-                fullName,
-                Sort.by(Sort.Direction.ASC, "sequenceNumber")
-            )
+        doReturn(flowOf(*testBooks.toTypedArray())).whenever(bookService).findBooksBySeriesAndAuthorFullName(
+            seriesName,
+            fullName,
+            Sort.by(Sort.Direction.ASC, "sequenceNumber")
         )
-            .thenReturn(flowOf(*testBooks.toTypedArray()))
-        `when`(bookService.imageTypes(testBooks)).thenReturn(testBooks.associate { it.id!! to "image/jpeg" })
-        `when`(bookService.shortDescriptions(testBooks)).thenReturn(testBooks.associate { it.id!! to "Description for ${it.name}" })
+        doReturn(testBooks.associate { it.id!! to "image/jpeg" }).whenever(bookService).imageTypes(testBooks)
+        doReturn(testBooks.associate { it.id!! to "Description for ${it.name}" }).whenever(bookService).shortDescriptions(testBooks)
 
         // Act
         val response = htmxHandler.authorSeriesBooks(mockRequest)
@@ -411,10 +405,9 @@ class HtmxHandlerTest {
             .pathVariable("fullName", encodedFullName)
             .build()
 
-        `when`(bookService.findBooksByAuthorWithoutSeriesFullName(fullName, Sort.by(Sort.Direction.ASC, "name")))
-            .thenReturn(flowOf(*testBooks.toTypedArray()))
-        `when`(bookService.imageTypes(testBooks)).thenReturn(testBooks.associate { it.id!! to "image/jpeg" })
-        `when`(bookService.shortDescriptions(testBooks)).thenReturn(testBooks.associate { it.id!! to "Description for ${it.name}" })
+        doReturn(flowOf(*testBooks.toTypedArray())).whenever(bookService).findBooksByAuthorWithoutSeriesFullName(fullName, Sort.by(Sort.Direction.ASC, "name"))
+        doReturn(testBooks.associate { it.id!! to "image/jpeg" }).whenever(bookService).imageTypes(testBooks)
+        doReturn(testBooks.associate { it.id!! to "Description for ${it.name}" }).whenever(bookService).shortDescriptions(testBooks)
 
         // Act
         val response = htmxHandler.authorNoSeriesBooks(mockRequest)
@@ -438,9 +431,9 @@ class HtmxHandlerTest {
             .pathVariable("fullName", encodedFullName)
             .build()
 
-        `when`(bookService.findBooksByAuthorFullName(fullName, 0)).thenReturn(pagedBooks)
-        `when`(bookService.imageTypes(testBooks)).thenReturn(testBooks.associate { it.id!! to "image/jpeg" })
-        `when`(bookService.shortDescriptions(testBooks)).thenReturn(testBooks.associate { it.id!! to "Description for ${it.name}" })
+        doReturn(pagedBooks).whenever(bookService).findBooksByAuthorFullName(fullName, 0)
+        doReturn(testBooks.associate { it.id!! to "image/jpeg" }).whenever(bookService).imageTypes(testBooks)
+        doReturn(testBooks.associate { it.id!! to "Description for ${it.name}" }).whenever(bookService).shortDescriptions(testBooks)
 
         // Act
         val response = htmxHandler.authorAllBooks(mockRequest)
