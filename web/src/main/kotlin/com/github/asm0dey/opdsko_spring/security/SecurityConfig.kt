@@ -82,6 +82,7 @@ class SecurityConfig(
                 }
             } else {
                 authorizeExchange {
+                    authorize(IpAddressMatcher(authProperties.allowedIps), permitAll)
                     authorize(anyExchange, hasRole("ADMIN"))
                 }
                 formLogin {
