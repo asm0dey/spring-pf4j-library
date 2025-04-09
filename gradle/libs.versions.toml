@@ -46,7 +46,7 @@ kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
 kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.2" }
 kotlinx-html-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-html-jvm", version.ref = "kotlinx-html" }
-kotlinx-serialization-json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0"
+kotlinx-serialization-json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1"
 kotlinx-serialization-protobuf = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.1"
 meilisearch = "com.meilisearch.sdk:meilisearch-java:0.14.3"
 pf4j = { module = "org.pf4j:pf4j", version.ref = "pf4j" }
