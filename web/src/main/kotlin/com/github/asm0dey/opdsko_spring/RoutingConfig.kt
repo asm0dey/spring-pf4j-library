@@ -102,6 +102,7 @@ class RoutingConfig {
                 GET("/download", commonHandler::downloadBook)
                 GET("/download/{format}", commonHandler::downloadBook)
                 GET("/info", commonHandler::getBookInfo)
+                GET("/description", commonHandler::getBookDescription)
             }
             GET("/image/{id}", commonHandler::getBookCover)
             GET("/fullimage/{id}", commonHandler::getFullBookCover)

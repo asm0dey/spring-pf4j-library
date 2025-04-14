@@ -50,23 +50,21 @@ class OpdsViewRenderer(private val libraryProperties: LibraryProperties) : ViewR
                 element("summary", mapOf("type" to "text"), content = escapeXml(description))
             }
 
-            // Add cover image link if available
-            if (book.hasCover && images[book.id] != null) {
-                element(
-                    "link", mapOf(
-                        "rel" to "http://opds-spec.org/image",
-                        "href" to "/common/image/${book.id}",
-                        "type" to "${images[book.id]}"
-                    )
+            // Add cover image links
+            element(
+                "link", mapOf(
+                    "rel" to "http://opds-spec.org/image",
+                    "href" to "/common/image/${book.id}",
+                    "type" to (images[book.id] ?: "image/jpeg")
                 )
-                element(
-                    "link", mapOf(
-                        "rel" to "http://opds-spec.org/image/thumbnail",
-                        "href" to "/common/image/${book.id}",
-                        "type" to "${images[book.id]}"
-                    )
+            )
+            element(
+                "link", mapOf(
+                    "rel" to "http://opds-spec.org/image/thumbnail",
+                    "href" to "/common/image/${book.id}",
+                    "type" to (images[book.id] ?: "image/jpeg")
                 )
-            }
+            )
 
             // Add acquisition link for original format
             val extension = book.path.substringAfterLast('.')

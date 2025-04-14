@@ -34,28 +34,27 @@ class HtmxViewRenderer(private val libraryProperties: LibraryProperties) : ViewR
                         +book.name
                     }
                 }
-                if (images[book.id] != null && book.hasCover) {
-                    div("card-image") {
-                        figure("image is-2by3") {
-                            a {
-                                attributes["hx-get"] = "/common/fullimage/${book.id}"
-                                attributes["hx-swap"] = "innerHTML"
-                                attributes["hx-target"] = "#modal-content"
-                                attributes["_"] = "on htmx:afterOnLoad wait 10ms then add .is-active to #modal"
-                                img(src = "/common/image/${book.id}") {
-                                    attributes["loading"] = "lazy"
-                                    attributes["alt"] = "Book cover for ${book.name}"
-                                    attributes["title"] = "Click to view full-size image"
-                                }
+                div("card-image") {
+                    figure("image is-2by3") {
+                        div {
+                            attributes["hx-get"] = "/common/image/${book.id}"
+                            attributes["hx-trigger"] = "load"
+                            attributes["hx-swap"] = "outerHTML"
+                            img(alt = "Book cover loading...", src = "/img/bars.svg") {
+                                attributes["class"] = "htmx-indicator"
+                                attributes["width"] = "30"
                             }
                         }
                     }
                 }
                 div("card-content") {
-                    div("content") {
-                        text((descriptions[book.id]?.let {
-                            it.substring(0 until min(it.length, 200))
-                        }?.plus('…') ?: ""))
+                    div {
+                        attributes["hx-get"] = "/common/book/${book.id}/description"
+                        attributes["hx-trigger"] = "load"
+                        attributes["hx-swap"] = "outerHTML"
+                        div("content htmx-indicator") {
+                            +"Loading description..."
+                        }
                     }
                 }
                 footer("card-footer mb-0 pb-0 is-align-items-self-end") {

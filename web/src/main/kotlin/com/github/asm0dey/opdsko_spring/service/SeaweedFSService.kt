@@ -51,6 +51,7 @@ class SeaweedFSService(private val filerClient: FilerClient) {
      */
     fun getBookDescription(bookId: String): String? {
         try {
+            if (!filerClient.exists("/descriptions/$bookId")) return null
             return SeaweedInputStream(filerClient, "/descriptions/$bookId").use { inputStream ->
                 String(inputStream.readAllBytes())
             }
@@ -270,5 +271,9 @@ class SeaweedFSService(private val filerClient: FilerClient) {
             logger.error("Error deleting book cover from SeaweedFS: ${e.message}", e)
             return false
         }
+    }
+
+    fun saveAnnotation(bookId: String, annotation: String) {
+
     }
 }
