@@ -121,53 +121,62 @@ class BookFileService(
     suspend fun shortDescriptions(bookWithInfos: List<Book>): Map<String, String> =
         bookWithInfos.map { it.id to it }
             .associate { (id, book) ->
-                // First try to get the description from SeaweedFS
                 var text = seaweedFSService.getBookDescription(id!!)
-
-                // If not available in SeaweedFS, generate it and save it
-                if (text == null) {
-                    // Check if the size is 0 and get the real size if needed
-                    var bookSize = book.size
-                    if (bookSize == 0L) {
-                        bookSize = try {
-                            getRealBookSize(book.path)
-                        } catch (e:Exception){
-                            logger.error("Unable to get real size for book ${book.id} from path ${book.path}", e)
-                            0L
-                        }
-                        if (bookSize > 0) {
-                            // Update the MongoDB record with the real size
-                            val updatedBook = book.copy(size = bookSize)
-                            bookDataService.saveBook(updatedBook)
-                        }
-                    }
-
-                    val size = bookSize.humanReadable()
-                    val seq = book.sequence
-                    val seqNo = book.sequenceNumber
-
-                    val fb = try {
-                        obtainBook(book.path)
-                    } catch (e: Exception) {
-                        logger.error("Unable to obtain book ${book.id} from path ${book.path}", e)
-                        null
-                    }
-
-                    val descr = fb?.annotation ?: ""
-                    text = buildString {
-                        append("Size: $size.\n ")
-                        seq?.let { append("Series: $it") }
-                        seqNo?.let { append("#${it.toString().padStart(3, '0')}") }
-                        seq?.let { append(".\n ") }
-                        append(descr)
-                    }
-
-                    // Save the description to SeaweedFS for future use
-                    seaweedFSService.saveBookDescription(id, text)
-                }
-
+                text = saveToSeaweedIfNotAvailable(text, book, id)
                 id to text
             }
+
+    private suspend fun saveToSeaweedIfNotAvailable(
+        text: String?,
+        book: Book,
+        id: String
+    ): String {
+        var descr = text
+        if (descr == null) {
+            val bookSize = updateSizeIfNeeded(book)
+            val size = bookSize.humanReadable()
+            val seq = book.sequence
+            val seqNo = book.sequenceNumber
+
+            val fb = try {
+                obtainBook(book.path)
+            } catch (e: Exception) {
+                logger.error("Unable to obtain book ${book.id} from path ${book.path}", e)
+                null
+            }
+
+            descr = buildString {
+                append("Size: $size.\n ")
+                seq?.let { append("Series: $it") }
+                seqNo?.let { append("#${it.toString().padStart(3, '0')}") }
+                seq?.let { append(".\n ") }
+                append(fb?.annotation ?: "")
+            }
+
+            // Save the description to SeaweedFS for future use
+            seaweedFSService.saveBookDescription(id, descr)
+        }
+        return descr
+    }
+
+    private suspend fun updateSizeIfNeeded(book: Book): Long {
+        // Check if the size is 0 and get the real size if needed
+        var bookSize = book.size
+        if (bookSize == 0L) {
+            bookSize = try {
+                getRealBookSize(book.path)
+            } catch (e: Exception) {
+                logger.error("Unable to get real size for book ${book.id} from path ${book.path}", e)
+                0L
+            }
+            if (bookSize > 0) {
+                // Update the MongoDB record with the real size
+                val updatedBook = book.copy(size = bookSize)
+                bookDataService.saveBook(updatedBook)
+            }
+        }
+        return bookSize
+    }
 
     /**
      * Gets the data of a book.

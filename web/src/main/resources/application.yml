@@ -69,7 +69,7 @@ logging:
               query: debug
 scanner:
   sources:
-#    - /home/finkel/Books/
+    #    - /home/finkel/Books/
     - /home/finkel/Downloads/flibusta_fb2_local.inpx
 
 meilisearch:
@@ -107,3 +107,9 @@ auth:
 #   Example: LIBRARY_TITLE=My Personal Library
 library:
   title: ${LIBRARY_TITLE:Asm0dey's library}
+
+mongock:
+  test-enabled: false
+  migration-scan-package: [ "com.github.asm0dey.opdsko_spring.migrations" ]
+  index-creation: true
+  enabled: true

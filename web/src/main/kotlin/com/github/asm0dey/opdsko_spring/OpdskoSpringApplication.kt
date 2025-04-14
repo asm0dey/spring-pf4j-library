@@ -1,16 +1,9 @@
 package com.github.asm0dey.opdsko_spring
 
-import com.mongodb.reactivestreams.client.MongoClient
-import io.mongock.driver.mongodb.reactive.driver.MongoReactiveDriver
-import io.mongock.runner.springboot.MongockSpringboot
-import io.mongock.runner.springboot.base.MongockApplicationRunner
 import org.springframework.boot.WebApplicationType
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.boot.runApplication
-import org.springframework.context.ApplicationContext
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
@@ -35,28 +28,6 @@ fun main(args: Array<String>) {
             .run(*args)
     } else {
         runApplication<OpdskoSpringApplication>(*args)
-    }
-}
-
-@Configuration
-class MongockConfig() {
-
-    @Bean
-    fun mongockApplicationRunner(
-        springContext: ApplicationContext,
-        mongoTemplate: MongoClient
-    ): MongockApplicationRunner {
-        val driver = MongoReactiveDriver.withDefaultLock(mongoTemplate, "mongock-lock")
-        driver.enableTransaction()
-
-        return MongockSpringboot.builder()
-            .setDriver(driver)
-            .addMigrationScanPackage("com.github.asm0dey.opdsko_spring.migrations")
-            .setEventPublisher(springContext)
-            .setSpringContext(springContext)
-            .setTransactional(false)
-            .setTrackIgnored(false)
-            .buildApplicationRunner()
     }
 }
 

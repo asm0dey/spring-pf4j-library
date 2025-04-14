@@ -7,9 +7,12 @@ import com.github.asm0dey.opdsko_spring.model.BreadcrumbsViewModel
 import com.github.asm0dey.opdsko_spring.model.NavTileViewModel
 import com.github.asm0dey.opdsko_spring.service.BookService
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
@@ -53,7 +56,7 @@ abstract class AbstractHandler(
      * @return A boolean indicating whether the current user is an admin
      */
     protected suspend fun isAdmin(req: ServerRequest): Boolean {
-        val principal = req.principal().awaitSingle() ?: return false
+        val principal = req.principal().awaitSingleOrNull() ?: return false
         if (principal is Authentication) {
             return principal.authorities.any { it.authority == "ROLE_ADMIN" }
         }
@@ -92,8 +95,12 @@ abstract class AbstractHandler(
         val searchTerm = req.queryParam("search").getOrNull()!!
         val books = bookService.searchBookByName(searchTerm, page)
 
-        val images = getBookImages(books)
-        val descriptions = getBookDescriptions(books)
+        // Fetch images and descriptions in parallel
+        val (images, descriptions) = coroutineScope {
+            val imagesDeferred = async { getBookImages(books) }
+            val descriptionsDeferred = async { getBookDescriptions(books) }
+            Pair(imagesDeferred.await(), descriptionsDeferred.await())
+        }
 
         val bookTiles = books.joinToString("") { book ->
             val model = BookTileViewModel(book, images[book.id], descriptions[book.id])
@@ -125,8 +132,12 @@ abstract class AbstractHandler(
         val pagedBooks = bookService.newBooks(page)
         val books = pagedBooks.books
 
-        val images = getBookImages(books)
-        val descriptions = getBookDescriptions(books)
+        // Fetch images and descriptions in parallel
+        val (images, descriptions) = coroutineScope {
+            val imagesDeferred = async { getBookImages(books) }
+            val descriptionsDeferred = async { getBookDescriptions(books) }
+            Pair(imagesDeferred.await(), descriptionsDeferred.await())
+        }
 
         val bookTiles = books.joinToString("") { book ->
             val model = BookTileViewModel(book, images[book.id], descriptions[book.id])
@@ -368,8 +379,12 @@ abstract class AbstractHandler(
         val sort = Sort.by(Sort.Direction.ASC, "name")
         val books = bookService.findBooksByAuthorWithoutSeriesFullName(fullName, sort).toList()
 
-        val images = getBookImages(books)
-        val descriptions = getBookDescriptions(books)
+        // Fetch images and descriptions in parallel
+        val (images, descriptions) = coroutineScope {
+            val imagesDeferred = async { getBookImages(books) }
+            val descriptionsDeferred = async { getBookDescriptions(books) }
+            Pair(imagesDeferred.await(), descriptionsDeferred.await())
+        }
 
         val bookTiles = books.joinToString("") { book ->
             val model = BookTileViewModel(book, images[book.id], descriptions[book.id])
@@ -407,8 +422,12 @@ abstract class AbstractHandler(
         val pagedBooks = bookService.findBooksByAuthorFullName(fullName, page)
         val books = pagedBooks.books
 
-        val images = getBookImages(books)
-        val descriptions = getBookDescriptions(books)
+        // Fetch images and descriptions in parallel
+        val (images, descriptions) = coroutineScope {
+            val imagesDeferred = async { getBookImages(books) }
+            val descriptionsDeferred = async { getBookDescriptions(books) }
+            Pair(imagesDeferred.await(), descriptionsDeferred.await())
+        }
 
         val bookTiles = books.joinToString("") { book ->
             val model = BookTileViewModel(book, images[book.id], descriptions[book.id])
@@ -465,14 +484,20 @@ abstract class AbstractHandler(
         return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, req, isAdmin))
     }
 
-    private suspend fun AbstractHandler.generateBookTilesForSeries(seriesName: String): String {
+    private suspend fun AbstractHandler.generateBookTilesForSeries(seriesName: String): String = coroutineScope {
         val sort = Sort.by(Sort.Direction.ASC, "sequenceNumber")
         val books = bookService.findBooksBySeries(seriesName, sort).toList()
 
-        val images = getBookImages(books)
-        val descriptions = getBookDescriptions(books)
+        // Fetch images and descriptions in parallel
+        val imagesDeferred = async { getBookImages(books) }
+        val descriptionsDeferred = async { getBookDescriptions(books) }
 
-        return books.joinToString("") { book ->
+        // Wait for both to complete
+        val images = imagesDeferred.await()
+        val descriptions = descriptionsDeferred.await()
+
+        // Process books in parallel and join the results
+        books.joinToString("") { book ->
             val model = BookTileViewModel(book, images[book.id], descriptions[book.id])
             BookTile(
                 BookTileViewModel(book, images[book.id], descriptions[book.id]), additionalFormats(model.book.path)
@@ -483,14 +508,20 @@ abstract class AbstractHandler(
     private suspend fun AbstractHandler.generateBookTilesForSeriesAndAuthor(
         seriesName: String,
         authorFullName: String
-    ): String {
+    ): String = coroutineScope {
         val sort = Sort.by(Sort.Direction.ASC, "sequenceNumber")
         val books = bookService.findBooksBySeriesAndAuthorFullName(seriesName, authorFullName, sort).toList()
 
-        val images = getBookImages(books)
-        val descriptions = getBookDescriptions(books)
+        // Fetch images and descriptions in parallel
+        val imagesDeferred = async { getBookImages(books) }
+        val descriptionsDeferred = async { getBookDescriptions(books) }
 
-        return books.joinToString("") { book ->
+        // Wait for both to complete
+        val images = imagesDeferred.await()
+        val descriptions = descriptionsDeferred.await()
+
+        // Process books and join the results
+        books.joinToString("") { book ->
             BookTile(
                 BookTileViewModel(book, images[book.id], descriptions[book.id]), additionalFormats(book.path)
             )

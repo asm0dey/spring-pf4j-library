@@ -1,5 +1,6 @@
 package com.github.asm0dey.opdsko_spring
 
+import com.github.asm0dey.opdsko_spring.repo.BookIndexItem
 import com.github.asm0dey.opdsko_spring.repo.BookMongoRepository
 import com.github.asm0dey.opdsko_spring.repo.BookRepo
 import com.github.asm0dey.opdsko_spring.repo.Meilisearch
@@ -87,12 +88,16 @@ class Scanner(
                         )
                     }
                     .chunked(10000)
-                    .collect { processedBookChunk ->
+                    .map { processedBookChunk ->
                         logger.info("Saving chunk of ${processedBookChunk.size} books to MongoDB")
                         val savedBooks = bookRepo.save(processedBookChunk)
                         totalBooksProcessed += savedBooks.size
+                        savedBooks
                     }
-                resyncMeilisearch(request)
+                    .collectIndexed { index, chunk ->
+                        logger.info("Indexing chunk ${index + 1} (${chunk.size} books)")
+                        meilisearch.saveBooks(chunk.map { BookIndexItem(it.id!!, it.name) })
+                    }
                 logger.info("Book scanning completed. Processed $totalBooksProcessed books from $totalSourcesProcessed sources")
             } catch (e: Exception) {
                 logger.error("Error during book scanning: ${e.message}", e)
