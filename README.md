@@ -18,6 +18,7 @@ OPDSKO Spring is an OPDS (Open Publication Distribution System) catalog applicat
 - **Kotlin**: Programming language
 - **PF4J**: Plugin Framework for Java
 - **MongoDB/FerretDB**: Document database for metadata storage
+- **Mongock**: Database migration tool for MongoDB
 - **Meilisearch**: Search engine
 - **SeaweedFS**: Distributed file system
 - **HTMX & Hyperscript**: Frontend interactivity
@@ -59,7 +60,7 @@ The recommended way to install and run OPDSKO Spring is using Docker Compose wit
    ```yaml
    services:
      postgres:
-       image: ghcr.io/ferretdb/postgres-documentdb:17
+       image: ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.1.0
        restart: on-failure
        #    ports:
        #      - 5433:5432
@@ -72,7 +73,7 @@ The recommended way to install and run OPDSKO Spring is using Docker Compose wit
          - ./data/postgres:/var/lib/postgresql/data/pgdata
 
      ferretdb:
-       image: ghcr.io/ferretdb/ferretdb:2
+       image: ghcr.io/ferretdb/ferretdb:2.1.0
        restart: on-failure
        depends_on:
          - postgres
@@ -241,6 +242,23 @@ Or use environment variables:
 - `GOOGLE_CLIENT_ID`: Your Google OAuth2 client ID
 - `GOOGLE_CLIENT_SECRET`: Your Google OAuth2 client secret
 
+### Mongock Configuration
+
+Mongock is used for database migrations. It's configured in the `application.yml` file:
+
+```yaml
+mongock:
+  test-enabled: false
+  migration-scan-package: [ "com.github.asm0dey.opdsko_spring.migrations" ]
+  index-creation: true
+  enabled: true
+```
+
+- `test-enabled`: Whether to run migrations during tests
+- `migration-scan-package`: Package to scan for migration classes
+- `index-creation`: Whether to create indexes
+- `enabled`: Whether to enable Mongock migrations
+
 ## Usage
 
 1. Configure your book sources in the `application.yml` file.
@@ -272,6 +290,21 @@ To trigger a release:
 git tag v1.0.0
 git push origin v1.0.0
 ```
+
+## Recent Improvements
+
+### Performance Enhancements
+
+- **Parallel Processing**: Implemented parallel processing for fetching book images and descriptions using Kotlin coroutines, significantly improving page load times
+- **Incremental Indexing**: Improved the book scanning process to index books incrementally as they are processed, rather than in a separate step at the end
+- **Code Refactoring**: Reorganized code in several components for better maintainability and readability
+
+### Infrastructure Updates
+
+- **Database Migrations**: Added Mongock for MongoDB database migrations, making schema changes more reliable and manageable
+- **Updated Dependencies**: Updated Docker images to latest versions:
+  - FerretDB: Updated to version 2.1.0
+  - PostgreSQL: Updated to version 17-0.102.0-ferretdb-2.1.0
 
 ## Development
 
