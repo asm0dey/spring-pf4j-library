@@ -2,11 +2,11 @@ package com.github.asm0dey.opdsko_spring.service
 
 import com.github.asm0dey.opdsko_spring.Book
 import com.github.asm0dey.opdsko_spring.repo.PagedBooks
-import com.github.asm0dey.opdsko.common.Book as CommonBook
 import kotlinx.coroutines.flow.Flow
 import org.springframework.context.annotation.DependsOn
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import com.github.asm0dey.opdsko.common.Book as CommonBook
 
 /**
  * Main service for book operations.
@@ -42,7 +42,7 @@ class BookService(
      * @param absolutePath The absolute path to the books
      * @return A flow of books and their sizes
      */
-    fun obtainBooks(absolutePath: String): Flow<Pair<CommonBook, Long>> = 
+    fun obtainBooks(absolutePath: String): Flow<Pair<CommonBook, Long>> =
         bookFileService.obtainBooks(absolutePath)
 
     /**
@@ -137,7 +137,7 @@ class BookService(
      * @param sort The sort order
      * @return A flow of books in the series
      */
-    suspend fun findBooksBySeries(series: String, sort: Sort) = 
+    suspend fun findBooksBySeries(series: String, sort: Sort) =
         bookDataService.findBooksBySeries(series, sort)
 
     /**
@@ -148,7 +148,7 @@ class BookService(
      * @param sort The sort order
      * @return A flow of books in the series by the author
      */
-    suspend fun findBooksBySeriesAndAuthorFullName(series: String, fullName: String, sort: Sort) = 
+    suspend fun findBooksBySeriesAndAuthorFullName(series: String, fullName: String, sort: Sort) =
         bookDataService.findBooksBySeriesAndAuthorFullName(series, fullName, sort)
 
     /**

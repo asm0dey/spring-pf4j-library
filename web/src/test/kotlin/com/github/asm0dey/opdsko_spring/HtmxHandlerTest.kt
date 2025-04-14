@@ -93,6 +93,7 @@ class HtmxHandlerTest {
             .queryParams(queryParams)
             .build()
         doReturn(testBooks).whenever(bookService).searchBookByName(searchTerm, 0)
+/*
         doReturn(
             mapOf(
                 "1" to "image/jpeg",
@@ -100,6 +101,8 @@ class HtmxHandlerTest {
                 "3" to "image/jpeg"
             )
         ).whenever(bookService).imageTypes(testBooks)
+*/
+/*
         doReturn(
             mapOf(
                 "1" to "Description 1",
@@ -107,6 +110,7 @@ class HtmxHandlerTest {
                 "3" to "Description 3"
             )
         ).whenever(bookService).shortDescriptions(testBooks)
+*/
 
         // Act
         val response = htmxHandler.search(mockRequest)
@@ -129,6 +133,7 @@ class HtmxHandlerTest {
             .build()
 
         doReturn(pagedBooks).whenever(bookService).newBooks(0)
+/*
         doReturn(
             mapOf(
                 "1" to "image/jpeg",
@@ -136,6 +141,8 @@ class HtmxHandlerTest {
                 "3" to "image/jpeg"
             )
         ).whenever(bookService).imageTypes(testBooks)
+*/
+/*
         doReturn(
             mapOf(
                 "1" to "Description 1",
@@ -143,6 +150,7 @@ class HtmxHandlerTest {
                 "3" to "Description 3"
             )
         ).whenever(bookService).shortDescriptions(testBooks)
+*/
 
         // Act
         val response = htmxHandler.new(mockRequest)
@@ -194,8 +202,8 @@ class HtmxHandlerTest {
         val imageTypes = testBooks.associate { it.id!! to "image/jpeg" }
         val shortDescriptions = testBooks.associate { it.id!! to "Description for ${it.name}" }
 
-        doReturn(imageTypes).whenever(bookService).imageTypes(testBooks)
-        doReturn(shortDescriptions).whenever(bookService).shortDescriptions(testBooks)
+//        doReturn(imageTypes).whenever(bookService).imageTypes(testBooks)
+//        doReturn(shortDescriptions).whenever(bookService).shortDescriptions(testBooks)
 
         // Act
         val response = htmxHandler.seriesBooks(mockRequest)
@@ -348,8 +356,6 @@ class HtmxHandlerTest {
 
         doReturn(flowOf<SeriesResult>()).whenever(bookService).findSeriesByAuthorFullName(fullName)
         doReturn(pagedBooks).whenever(bookService).findBooksByAuthorFullName(fullName, 0)
-        doReturn(pagedBooks.books.associate { it.id!! to "image/jpeg" }).whenever(bookService).imageTypes(pagedBooks.books)
-        doReturn(pagedBooks.books.associate { it.id!! to "Description for ${it.name}" }).whenever(bookService).shortDescriptions(pagedBooks.books)
 
         // Act
         val response = htmxHandler.authorView(mockRequest)
@@ -403,8 +409,8 @@ class HtmxHandlerTest {
             fullName,
             Sort.by(Sort.Direction.ASC, "sequenceNumber")
         )
-        doReturn(testBooks.associate { it.id!! to "image/jpeg" }).whenever(bookService).imageTypes(testBooks)
-        doReturn(testBooks.associate { it.id!! to "Description for ${it.name}" }).whenever(bookService).shortDescriptions(testBooks)
+//        doReturn(testBooks.associate { it.id!! to "image/jpeg" }).whenever(bookService).imageTypes(testBooks)
+//        doReturn(testBooks.associate { it.id!! to "Description for ${it.name}" }).whenever(bookService).shortDescriptions(testBooks)
 
         // Act
         val response = htmxHandler.authorSeriesBooks(mockRequest)
@@ -428,8 +434,8 @@ class HtmxHandlerTest {
             .build()
 
         doReturn(flowOf(*testBooks.toTypedArray())).whenever(bookService).findBooksByAuthorWithoutSeriesFullName(fullName, Sort.by(Sort.Direction.ASC, "name"))
-        doReturn(testBooks.associate { it.id!! to "image/jpeg" }).whenever(bookService).imageTypes(testBooks)
-        doReturn(testBooks.associate { it.id!! to "Description for ${it.name}" }).whenever(bookService).shortDescriptions(testBooks)
+//        doReturn(testBooks.associate { it.id!! to "image/jpeg" }).whenever(bookService).imageTypes(testBooks)
+//        doReturn(testBooks.associate { it.id!! to "Description for ${it.name}" }).whenever(bookService).shortDescriptions(testBooks)
 
         // Act
         val response = htmxHandler.authorNoSeriesBooks(mockRequest)
@@ -454,8 +460,8 @@ class HtmxHandlerTest {
             .build()
 
         doReturn(pagedBooks).whenever(bookService).findBooksByAuthorFullName(fullName, 0)
-        doReturn(testBooks.associate { it.id!! to "image/jpeg" }).whenever(bookService).imageTypes(testBooks)
-        doReturn(testBooks.associate { it.id!! to "Description for ${it.name}" }).whenever(bookService).shortDescriptions(testBooks)
+//        doReturn(testBooks.associate { it.id!! to "image/jpeg" }).whenever(bookService).imageTypes(testBooks)
+//        doReturn(testBooks.associate { it.id!! to "Description for ${it.name}" }).whenever(bookService).shortDescriptions(testBooks)
 
         // Act
         val response = htmxHandler.authorAllBooks(mockRequest)

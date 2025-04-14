@@ -17,7 +17,7 @@ class HtmxHandler(
     bookService: BookService,
     private val viewRenderer: HtmxViewRenderer,
     formatConverters: List<FormatConverter>
-) : AbstractHandler(bookService, formatConverters) {
+) : AbstractHandler(bookService, formatConverters, true) {
 
     override fun NavTile(model: NavTileViewModel): String {
         return viewRenderer.NavTile(model.title, model.subtitle, model.href)

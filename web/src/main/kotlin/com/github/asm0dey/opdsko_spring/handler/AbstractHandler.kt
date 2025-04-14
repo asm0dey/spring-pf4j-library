@@ -11,20 +11,16 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.http.MediaType
 import org.springframework.security.core.Authentication
-import org.springframework.security.core.GrantedAuthority
-import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.bodyValueAndAwait
 import org.springframework.web.reactive.function.server.queryParamOrNull
-import reactor.core.publisher.Mono
 import java.net.URLDecoder
 import java.net.URLEncoder.encode
 import kotlin.jvm.optionals.getOrNull
@@ -32,7 +28,8 @@ import kotlin.jvm.optionals.getOrNull
 @Suppress("FunctionName")
 abstract class AbstractHandler(
     private val bookService: BookService,
-    private val formatConverters: List<FormatConverter>
+    private val formatConverters: List<FormatConverter>,
+    private val canLazyLoadData: Boolean = false
 ) {
     private val logger = LoggerFactory.getLogger(AbstractHandler::class.java)
 
@@ -40,7 +37,13 @@ abstract class AbstractHandler(
     protected abstract fun NavTile(model: NavTileViewModel): String
     protected abstract fun BookTile(model: BookTileViewModel, additionalFormats: List<String>): String
     protected abstract fun Breadcrumbs(model: BreadcrumbsViewModel): String
-    protected abstract fun fullPage(content: String, breadcrumbs: String, req: ServerRequest, isAdmin: Boolean = false): String
+    protected abstract fun fullPage(
+        content: String,
+        breadcrumbs: String,
+        req: ServerRequest,
+        isAdmin: Boolean = false
+    ): String
+
     protected abstract fun fullPage(
         content: String,
         breadcrumbs: String,
@@ -94,20 +97,8 @@ abstract class AbstractHandler(
         val page = pageParam - 1 // Convert to 0-based for repository
         val searchTerm = req.queryParam("search").getOrNull()!!
         val books = bookService.searchBookByName(searchTerm, page)
+        val bookTiles = bookTiles(books)
 
-        // Fetch images and descriptions in parallel
-        val (images, descriptions) = coroutineScope {
-            val imagesDeferred = async { getBookImages(books) }
-            val descriptionsDeferred = async { getBookDescriptions(books) }
-            Pair(imagesDeferred.await(), descriptionsDeferred.await())
-        }
-
-        val bookTiles = books.joinToString("") { book ->
-            val model = BookTileViewModel(book, images[book.id], descriptions[book.id])
-            BookTile(
-                BookTileViewModel(book, images[book.id], descriptions[book.id]), additionalFormats(model.book.path)
-            )
-        }
 
         val breadcrumbs = Breadcrumbs(
             BreadcrumbsViewModel(
@@ -126,12 +117,12 @@ abstract class AbstractHandler(
         return ok().bodyValueAndAwait(fullPage(bookTiles, breadcrumbs, pagination, req, isAdmin))
     }
 
-    suspend fun new(req: ServerRequest): ServerResponse {
-        val pageParam = req.queryParamOrNull("page")?.toIntOrNull() ?: 1
-        val page = pageParam - 1 // Convert to 0-based for repository
-        val pagedBooks = bookService.newBooks(page)
-        val books = pagedBooks.books
-
+    private suspend fun bookTiles(books: List<Book>): String {
+        if (canLazyLoadData) return books.joinToString("") { book ->
+            BookTile(
+                BookTileViewModel(book, null, null), additionalFormats(book.path)
+            )
+        }
         // Fetch images and descriptions in parallel
         val (images, descriptions) = coroutineScope {
             val imagesDeferred = async { getBookImages(books) }
@@ -139,12 +130,21 @@ abstract class AbstractHandler(
             Pair(imagesDeferred.await(), descriptionsDeferred.await())
         }
 
-        val bookTiles = books.joinToString("") { book ->
-            val model = BookTileViewModel(book, images[book.id], descriptions[book.id])
+        return books.joinToString("") { book ->
             BookTile(
-                BookTileViewModel(book, images[book.id], descriptions[book.id]), additionalFormats(model.book.path)
+                BookTileViewModel(book, images[book.id], descriptions[book.id]), additionalFormats(book.path)
             )
         }
+    }
+
+    suspend fun new(req: ServerRequest): ServerResponse {
+        val pageParam = req.queryParamOrNull("page")?.toIntOrNull() ?: 1
+        val page = pageParam - 1 // Convert to 0-based for repository
+        val pagedBooks = bookService.newBooks(page)
+        val books = pagedBooks.books
+
+
+        val bookTiles = bookTiles(books)
 
         val breadcrumbs = Breadcrumbs(
             BreadcrumbsViewModel(
@@ -379,19 +379,8 @@ abstract class AbstractHandler(
         val sort = Sort.by(Sort.Direction.ASC, "name")
         val books = bookService.findBooksByAuthorWithoutSeriesFullName(fullName, sort).toList()
 
-        // Fetch images and descriptions in parallel
-        val (images, descriptions) = coroutineScope {
-            val imagesDeferred = async { getBookImages(books) }
-            val descriptionsDeferred = async { getBookDescriptions(books) }
-            Pair(imagesDeferred.await(), descriptionsDeferred.await())
-        }
 
-        val bookTiles = books.joinToString("") { book ->
-            val model = BookTileViewModel(book, images[book.id], descriptions[book.id])
-            BookTile(
-                BookTileViewModel(book, images[book.id], descriptions[book.id]), additionalFormats(model.book.path)
-            )
-        }
+        val bookTiles = bookTiles(books)
 
         val breadcrumbs = Breadcrumbs(
             BreadcrumbsViewModel(
@@ -422,19 +411,8 @@ abstract class AbstractHandler(
         val pagedBooks = bookService.findBooksByAuthorFullName(fullName, page)
         val books = pagedBooks.books
 
-        // Fetch images and descriptions in parallel
-        val (images, descriptions) = coroutineScope {
-            val imagesDeferred = async { getBookImages(books) }
-            val descriptionsDeferred = async { getBookDescriptions(books) }
-            Pair(imagesDeferred.await(), descriptionsDeferred.await())
-        }
 
-        val bookTiles = books.joinToString("") { book ->
-            val model = BookTileViewModel(book, images[book.id], descriptions[book.id])
-            BookTile(
-                BookTileViewModel(book, images[book.id], descriptions[book.id]), additionalFormats(model.book.path)
-            )
-        }
+        val bookTiles = bookTiles(books)
 
         val breadcrumbs = Breadcrumbs(
             BreadcrumbsViewModel(
@@ -487,22 +465,7 @@ abstract class AbstractHandler(
     private suspend fun AbstractHandler.generateBookTilesForSeries(seriesName: String): String = coroutineScope {
         val sort = Sort.by(Sort.Direction.ASC, "sequenceNumber")
         val books = bookService.findBooksBySeries(seriesName, sort).toList()
-
-        // Fetch images and descriptions in parallel
-        val imagesDeferred = async { getBookImages(books) }
-        val descriptionsDeferred = async { getBookDescriptions(books) }
-
-        // Wait for both to complete
-        val images = imagesDeferred.await()
-        val descriptions = descriptionsDeferred.await()
-
-        // Process books in parallel and join the results
-        books.joinToString("") { book ->
-            val model = BookTileViewModel(book, images[book.id], descriptions[book.id])
-            BookTile(
-                BookTileViewModel(book, images[book.id], descriptions[book.id]), additionalFormats(model.book.path)
-            )
-        }
+        return@coroutineScope bookTiles(books)
     }
 
     private suspend fun AbstractHandler.generateBookTilesForSeriesAndAuthor(
@@ -511,21 +474,7 @@ abstract class AbstractHandler(
     ): String = coroutineScope {
         val sort = Sort.by(Sort.Direction.ASC, "sequenceNumber")
         val books = bookService.findBooksBySeriesAndAuthorFullName(seriesName, authorFullName, sort).toList()
-
-        // Fetch images and descriptions in parallel
-        val imagesDeferred = async { getBookImages(books) }
-        val descriptionsDeferred = async { getBookDescriptions(books) }
-
-        // Wait for both to complete
-        val images = imagesDeferred.await()
-        val descriptions = descriptionsDeferred.await()
-
-        // Process books and join the results
-        books.joinToString("") { book ->
-            BookTile(
-                BookTileViewModel(book, images[book.id], descriptions[book.id]), additionalFormats(book.path)
-            )
-        }
+        bookTiles(books)
     }
 
     // Helper methods

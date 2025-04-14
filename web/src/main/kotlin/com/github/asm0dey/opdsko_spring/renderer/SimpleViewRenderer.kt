@@ -39,13 +39,11 @@ class SimpleViewRenderer(private val libraryProperties: LibraryProperties) : Vie
         return createHTML(false).div(classes = "column col-4") {
             div("card") {
                 div(classes = "card-image") {
-                    if (images[book.id] != null && book.hasCover) {
-                        a(href = "/simple/book/${book.id}/fullimage") {
-                            img(src = "/common/image/${book.id}", classes = "img-responsive") {
-                                attributes["loading"] = "lazy"
-                                attributes["alt"] = "Book cover for ${book.name}"
-                                attributes["title"] = "Click to view full-size image"
-                            }
+                    a(href = "/simple/book/${book.id}/fullimage") {
+                        img(src = "/common/image/${book.id}", classes = "img-responsive") {
+                            attributes["loading"] = "lazy"
+                            attributes["alt"] = "Book cover for ${book.name}"
+                            attributes["title"] = "Click to view full-size image"
                         }
                     }
                 }
