@@ -36,7 +36,7 @@ htmx-ext-sse = "org.webjars.npm:htmx-ext-sse:2.2.3"
 hyperscript = "org.webjars.npm:hyperscript.org:0.9.13"
 spectre-css = "org.webjars.npm:spectre.css:0.5.9"
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
-jsoup = "org.jsoup:jsoup:1.19.1"
+jsoup = "org.jsoup:jsoup:1.20.1"
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.12.2" }
 ##                                                                 ⬆ = "5.13.0-M1" }
 ##                                                                 ⬆ = "5.13.0-M2" }
