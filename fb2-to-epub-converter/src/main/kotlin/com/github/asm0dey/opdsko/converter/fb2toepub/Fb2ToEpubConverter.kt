@@ -34,10 +34,13 @@ class Fb2ToEpubConverter : FormatConverter {
             tempInputFile.outputStream().buffered().use { output ->
                 inputStream.buffered().use { it.copyTo(output) }
             }
+            val fb2cConfigPath = System.getenv("FB2C_CONFIG_PATH") ?: "/tmp/converter/fb2c.conf.toml"
 
             // Run the conversion process
             val process = ProcessBuilder(
                 "/tmp/converter/fb2c",
+                "--config",
+                fb2cConfigPath,
                 "convert",
                 "--to",
                 "epub",
