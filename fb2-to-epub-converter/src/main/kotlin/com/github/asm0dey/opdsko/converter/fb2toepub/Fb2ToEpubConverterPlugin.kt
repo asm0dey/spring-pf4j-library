@@ -13,7 +13,7 @@ import kotlin.concurrent.thread
 import kotlin.io.path.Path
 import kotlin.io.path.setPosixFilePermissions
 
-private const val FB2C_VERSION = "v1.77.1"
+private const val FB2C_VERSION = "v1.77.2"
 
 class Fb2ToEpubConverterPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     companion object {
