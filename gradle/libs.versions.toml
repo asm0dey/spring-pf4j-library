@@ -16,7 +16,7 @@ kotlin = "2.1.21"
 ##  ⬆ = "2.2.0-RC"
 kotlinx-html = "0.12.0"
 pf4j = "3.13.0"
-spring-boot = "3.4.5"
+spring-boot = "3.5.0"
 mongock = "5.5.1"
 kotlin-xml-builder = "1.9.3"
 
