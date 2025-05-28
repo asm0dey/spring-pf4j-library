@@ -5,7 +5,7 @@
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta13" }
+shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta15" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 
 [versions]
