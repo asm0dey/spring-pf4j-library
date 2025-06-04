@@ -72,5 +72,5 @@ spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-te
 testcontainers-jupiter = "org.testcontainers:junit-jupiter:1.21.0"
 testcontainers-postgres = "org.testcontainers:postgresql:1.21.0"
 testcontainers-mongo = "org.testcontainers:mongodb:1.21.0"
-bouncycastle = "org.bouncycastle:bcprov-jdk18on:1.80"
+bouncycastle = "org.bouncycastle:bcprov-jdk18on:1.81"
 mockito-kotlin = "org.mockito.kotlin:mockito-kotlin:5.4.0"
