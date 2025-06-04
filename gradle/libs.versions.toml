@@ -69,8 +69,8 @@ spring-boot-test = { module = "org.springframework.boot:spring-boot-test", versi
 zip4j = "net.lingala.zip4j:zip4j:2.11.5"
 seaweedfs = "com.seaweedfs:seaweedfs-client:3.80"
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
-testcontainers-jupiter = "org.testcontainers:junit-jupiter:1.21.0"
-testcontainers-postgres = "org.testcontainers:postgresql:1.21.0"
-testcontainers-mongo = "org.testcontainers:mongodb:1.21.0"
+testcontainers-jupiter = "org.testcontainers:junit-jupiter:1.21.1"
+testcontainers-postgres = "org.testcontainers:postgresql:1.21.1"
+testcontainers-mongo = "org.testcontainers:mongodb:1.21.1"
 bouncycastle = "org.bouncycastle:bcprov-jdk18on:1.81"
 mockito-kotlin = "org.mockito.kotlin:mockito-kotlin:5.4.0"
