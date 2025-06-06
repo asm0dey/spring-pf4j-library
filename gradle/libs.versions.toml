@@ -2,70 +2,70 @@
 
 [plugins]
 
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+
 kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta12" }
+shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta15" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 
 [versions]
 
-kotlin = "2.1.20"
+kotlin = "2.1.21"
+##  ⬆ = "2.2.0-Beta1"
+##  ⬆ = "2.2.0-Beta2"
+##  ⬆ = "2.2.0-RC"
 kotlinx-html = "0.12.0"
 pf4j = "3.13.0"
-spring-boot = "3.4.4"
+spring-boot = "3.5.0"
 mongock = "5.5.1"
 kotlin-xml-builder = "1.9.3"
 
 [libraries]
 
 assertj-core = { module = "org.assertj:assertj-core", version = "3.27.3" }
-##                                                         ⬆ = "4.0.0-M1" }
-kotlin-xml-builder = { module = "org.redundent:kotlin-xml-builder", version.ref = "kotlin-xml-builder" }
-mongock-bom = { module = "io.mongock:mongock-bom", version.ref = "mongock" }
-mongock-springboot = { module = "io.mongock:mongock-springboot" }
-mongock-mongodb-reactive-driver = { module = "io.mongock:mongodb-reactive-driver" }
-bulma = "org.webjars.npm:bulma:1.0.3"
+bouncycastle = "org.bouncycastle:bcprov-jdk18on:1.81"
+bulma = "org.webjars.npm:bulma:1.0.4"
 commons-codec = "commons-codec:commons-codec:1.18.0"
 epub4j = "io.documentnode:epub4j-core:4.2.2"
 flyway-core = { module = "org.flywaydb:flyway-core" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 font-awesome = "org.webjars.npm:font-awesome:4.7.0"
-htmx-org = "org.webjars.npm:htmx.org:2.0.4"
 htmx-ext-sse = "org.webjars.npm:htmx-ext-sse:2.2.3"
+htmx-org = "org.webjars.npm:htmx.org:2.0.4"
 hyperscript = "org.webjars.npm:hyperscript.org:0.9.13"
-spectre-css = "org.webjars.npm:spectre.css:0.5.9"
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
-jsoup = "org.jsoup:jsoup:1.19.1"
-junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.12.1" }
-##                                                                 ⬆ = "5.13.0-M1" }
-##                                                                 ⬆ = "5.13.0-M2" }
+jsoup = "org.jsoup:jsoup:1.20.1"
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.13.0" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
-kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor" }
+kotlin-xml-builder = { module = "org.redundent:kotlin-xml-builder", version.ref = "kotlin-xml-builder" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.2" }
+kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor" }
 kotlinx-html-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-html-jvm", version.ref = "kotlinx-html" }
 kotlinx-serialization-json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1"
 kotlinx-serialization-protobuf = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.1"
-meilisearch = "com.meilisearch.sdk:meilisearch-java:0.14.3"
+meilisearch = "com.meilisearch.sdk:meilisearch-java:0.14.7"
+mockito-kotlin = "org.mockito.kotlin:mockito-kotlin:5.4.0"
+mongock-bom = { module = "io.mongock:mongock-bom", version.ref = "mongock" }
+mongock-mongodb-reactive-driver = { module = "io.mongock:mongodb-reactive-driver" }
+mongock-springboot = { module = "io.mongock:mongock-springboot" }
 pf4j = { module = "org.pf4j:pf4j", version.ref = "pf4j" }
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions" }
+seaweedfs = "com.seaweedfs:seaweedfs-client:3.80"
+spectre-css = "org.webjars.npm:spectre.css:0.5.9"
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
 spring-boot-docker-compose = { module = "org.springframework.boot:spring-boot-docker-compose", version.ref = "spring-boot" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-mongo = { module = "org.springframework.boot:spring-boot-starter-data-mongodb-reactive" }
+spring-boot-starter-oauth2-client = { module = "org.springframework.boot:spring-boot-starter-oauth2-client" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test", version.ref = "spring-boot" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
-spring-boot-starter-security  = {module="org.springframework.boot:spring-boot-starter-security"}
-spring-boot-starter-oauth2-client  = {module="org.springframework.boot:spring-boot-starter-oauth2-client"}
 spring-boot-test = { module = "org.springframework.boot:spring-boot-test", version.ref = "spring-boot" }
-zip4j = "net.lingala.zip4j:zip4j:2.11.5"
-seaweedfs = "com.seaweedfs:seaweedfs-client:3.80"
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
-testcontainers-jupiter = "org.testcontainers:junit-jupiter:1.20.6"
-testcontainers-postgres = "org.testcontainers:postgresql:1.20.6"
-testcontainers-mongo = "org.testcontainers:mongodb:1.20.6"
-bouncycastle = "org.bouncycastle:bcprov-jdk18on:1.80"
-mockito-kotlin = "org.mockito.kotlin:mockito-kotlin:5.4.0"
+testcontainers-jupiter = "org.testcontainers:junit-jupiter:1.21.1"
+testcontainers-mongo = "org.testcontainers:mongodb:1.21.1"
+testcontainers-postgres = "org.testcontainers:postgresql:1.21.1"
+zip4j = "net.lingala.zip4j:zip4j:2.11.5"
