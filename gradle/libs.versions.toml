@@ -53,7 +53,7 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-html-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-html-jvm", version.ref = "kotlinx-html" }
 kotlinx-serialization-json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1"
 kotlinx-serialization-protobuf = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.1"
-meilisearch = "com.meilisearch.sdk:meilisearch-java:0.14.7"
+meilisearch = "com.meilisearch.sdk:meilisearch-java:0.15.0"
 pf4j = { module = "org.pf4j:pf4j", version.ref = "pf4j" }
 reactor-kotlin-extensions = { module = "io.projectreactor.kotlin:reactor-kotlin-extensions" }
 spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
