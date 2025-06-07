@@ -43,3 +43,9 @@ tasks.named<ShadowJar>("shadowJar") {
         )
     }
 }
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}

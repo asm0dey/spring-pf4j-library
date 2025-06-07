@@ -2,8 +2,8 @@
 
 [plugins]
 
-
 kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 shadow = { id = "com.gradleup.shadow", version = "9.0.0-beta15" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
@@ -14,6 +14,7 @@ kotlin = "2.1.21"
 ##  ⬆ = "2.2.0-Beta1"
 ##  ⬆ = "2.2.0-Beta2"
 ##  ⬆ = "2.2.0-RC"
+##  ⬆ = "2.2.0-RC2"
 kotlinx-html = "0.12.0"
 pf4j = "3.13.0"
 spring-boot = "3.5.0"
@@ -23,6 +24,7 @@ kotlin-xml-builder = "1.9.3"
 [libraries]
 
 assertj-core = { module = "org.assertj:assertj-core", version = "3.27.3" }
+##                                                         ⬆ = "4.0.0-M1" }
 bouncycastle = "org.bouncycastle:bcprov-jdk18on:1.81"
 bulma = "org.webjars.npm:bulma:1.0.4"
 commons-codec = "commons-codec:commons-codec:1.18.0"
@@ -35,7 +37,7 @@ htmx-org = "org.webjars.npm:htmx.org:2.0.4"
 hyperscript = "org.webjars.npm:hyperscript.org:0.9.13"
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 jsoup = "org.jsoup:jsoup:1.20.1"
-junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.13.0" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.13.1" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
@@ -45,7 +47,7 @@ kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-html-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-html-jvm", version.ref = "kotlinx-html" }
 kotlinx-serialization-json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1"
 kotlinx-serialization-protobuf = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.8.1"
-meilisearch = "com.meilisearch.sdk:meilisearch-java:0.14.7"
+meilisearch = "com.meilisearch.sdk:meilisearch-java:0.15.0"
 mockito-kotlin = "org.mockito.kotlin:mockito-kotlin:5.4.0"
 mongock-bom = { module = "io.mongock:mongock-bom", version.ref = "mongock" }
 mongock-mongodb-reactive-driver = { module = "io.mongock:mongodb-reactive-driver" }

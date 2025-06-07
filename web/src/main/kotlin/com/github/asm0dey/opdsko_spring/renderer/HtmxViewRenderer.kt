@@ -120,7 +120,7 @@ class HtmxViewRenderer(private val libraryProperties: LibraryProperties) : ViewR
                 meta(charset = "utf-8")
                 meta(name = "viewport", content = "width=device-width, initial-scale=1")
                 title(libraryProperties.title)
-                link(rel = "stylesheet", href = "/webjars/bulma/1.0.3/css/bulma.min.css")
+                link(rel = "stylesheet", href = "/webjars/bulma/1.0.4/css/bulma.min.css")
                 link(rel = "stylesheet", href = "/webjars/font-awesome/4.7.0/css/font-awesome.min.css")
             }
             body {

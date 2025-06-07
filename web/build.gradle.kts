@@ -113,3 +113,9 @@ tasks.named<BootBuildImage>("bootBuildImage") {
     // Enable publishing to a container registry if specified
     publish.set(shouldPublish?.toBoolean() ?: false)
 }
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
