@@ -1,5 +1,6 @@
 package com.github.asm0dey.opdsko_spring
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.asm0dey.opdsko_spring.repo.BookIndexItem
 import com.github.asm0dey.opdsko_spring.repo.BookMongoRepository
 import com.github.asm0dey.opdsko_spring.repo.BookRepo
@@ -11,15 +12,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.reactive.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.mongodb.core.BulkOperations
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Criteria.where
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.http.HttpStatus.ACCEPTED
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.bodyValueAndAwait
 import java.io.File
+
 
 @Suppress("ArrayInDataClass")
 @Configuration
@@ -34,6 +43,8 @@ class Scanner(
     private val meilisearch: Meilisearch,
     private val seaweedFSService: SeaweedFSService,
     private val bookMongoRepository: BookMongoRepository,
+    private val mongoTemplate: ReactiveMongoTemplate,
+    val objectMapper: ObjectMapper
 ) {
     private val logger = LoggerFactory.getLogger(Scanner::class.java)
 
@@ -66,7 +77,7 @@ class Scanner(
                         }
                     }
                     .flattenConcat()
-                    .filterNot { (commonBook, _) -> bookMongoRepository.existsByPathEquals(commonBook.path) }
+//                    .filterNot { (commonBook, _) -> bookMongoRepository.existsByPathEquals(commonBook.path) }
                     .map { (commonBook, size) ->
                         Book(
                             authors = commonBook.authors.map {
@@ -90,9 +101,21 @@ class Scanner(
                     .chunked(10000)
                     .map { processedBookChunk ->
                         logger.info("Saving chunk of ${processedBookChunk.size} books to MongoDB")
-                        val savedBooks = bookRepo.save(processedBookChunk)
-                        totalBooksProcessed += savedBooks.size
-                        savedBooks
+                        val bulkOps =
+                            mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, Book::class.java)
+                        for (book in processedBookChunk) {
+                            val query = Query(where("path").`is`(book.path))
+                            val map =
+                                objectMapper.convertValue(book, Map::class.java) as MutableMap<String, Any?>
+                            val update: Update = Update()
+                            map.forEach(update::set)
+                            bulkOps.upsert(query, update);
+                        }
+                        val savedBooks = bulkOps.execute().awaitSingle()
+                        totalBooksProcessed+=savedBooks.upserts.size
+                        val paths = processedBookChunk.map { it.path }
+                        val query = Query(Criteria().orOperator(where("path").`in`(paths)))
+                        mongoTemplate.find(query, Book::class.java).collectList().awaitSingle()
                     }
                     .collectIndexed { index, chunk ->
                         logger.info("Indexing chunk ${index + 1} (${chunk.size} books)")
