@@ -67,7 +67,7 @@ spring-boot-starter-validation = { module = "org.springframework.boot:spring-boo
 spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
 spring-boot-test = { module = "org.springframework.boot:spring-boot-test", version.ref = "spring-boot" }
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
-testcontainers-jupiter = "org.testcontainers:junit-jupiter:1.21.1"
-testcontainers-mongo = "org.testcontainers:mongodb:1.21.1"
-testcontainers-postgres = "org.testcontainers:postgresql:1.21.1"
+testcontainers-jupiter = "org.testcontainers:junit-jupiter:1.21.4"
+testcontainers-mongo = "org.testcontainers:mongodb:1.21.4"
+testcontainers-postgres = "org.testcontainers:postgresql:1.21.4"
 zip4j = "net.lingala.zip4j:zip4j:2.11.5"
