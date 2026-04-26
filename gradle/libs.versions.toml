@@ -37,7 +37,7 @@ htmx-org = "org.webjars.npm:htmx.org:2.0.4"
 hyperscript = "org.webjars.npm:hyperscript.org:0.9.13"
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin" }
 jsoup = "org.jsoup:jsoup:1.20.1"
-junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.13.1" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.14.4" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
